@@ -71,26 +71,75 @@ namespace ExcelClient
                 tableHeadingFormat(rng, "Input");
             }
         }
-
-        public static void CreateExcelTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, string tableName)
+        public static void CreateExcelMonthSummaryTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, string tableName, IEnumerable<string> excelColumns)
         {
-            var excelColumns = MovementsViewModel.excelColumns;
-
+            var minYear = movementsModel.Min(mov => mov.DateTime.Year);
+            var maxYear = movementsModel.Max(mov => mov.DateTime.Year);
             // Calculate size of the table
-            var endRow = _startRow + movementsModel.Count + 1;
-            var endColum = _startColumn + excelColumns.Count;
-
+            var endRow = _startRow + 12;
+            var endColum = _startColumn + excelColumns.Count();
+           
             // Create Excel table Header
-            using (ExcelRange rng = wsSheet.Cells[_startRow, _startColumn, endRow, endColum])
+            int startRow = _startRow;
+            int startColumn = _startColumn;
+
+            var row = _startRow + 1;
+            for (int year = minYear; year <= maxYear; year++)
+            {
+                //give table Name
+                tableName = string.Concat("Table-", year);
+
+                //add month column to Ienumeration
+                IEnumerable<string> TemExcelColumn = new[] { "Month" };
+                var newExcelColumn = TemExcelColumn.Concat(excelColumns);
+                // add Headers to table
+                CreateExcelTableHeader(wsSheet, tableName, newExcelColumn, startRow, endRow, _startColumn, endColum + 1);
+
+                var tableStartColumn = _startColumn;
+                row++;
+
+                // Set Excel table content
+                for (int month = 1; month <= 12; month++)
+                {
+                    var monthName = string.Concat(DateTimeFormatInfo.CurrentInfo.GetMonthName(month));
+                    AddExcelCellByRowAndColumn(tableStartColumn, row, monthName, wsSheet);
+                    foreach (var category in newExcelColumn)
+                    {
+                        if (category!="Month")
+                        {
+                            //Get summ for category
+                            double? totalCategory = ModelClassServices.GetTotalforCategory(movementsModel, category, year, month);
+
+                            //add value tu excel cell
+                            AddExcelCellByRowAndColumn(tableStartColumn, row, totalCategory, wsSheet);
+                        }
+                        tableStartColumn++;
+                    }
+                    tableStartColumn = _startColumn;
+                    row++;
+                }
+                row = row + 2;
+                startRow = row;
+                endRow = row + 12;
+            }
+
+            //var noko = dict2.Keys.Except(dict.Keys);
+            //var noko2 = dict.Keys.Except(dict2.Keys);
+            wsSheet.Cells[wsSheet.Dimension.Address].AutoFitColumns();
+        }
+
+        private static void CreateExcelTableHeader(ExcelWorksheet wsSheet, string tableName, IEnumerable<string> excelColumns, int startRow, int endRow, int startColumn, int endColum)
+        {
+            using (ExcelRange rng = wsSheet.Cells[startRow, startColumn, endRow, endColum])
             {
                 //Indirectly access ExcelTableCollection class
                 ExcelTable table = wsSheet.Tables.Add(rng, tableName);
                 var color = Color.FromArgb(250, 199, 111);
                 //Set Columns position & name
                 var i = 0;
-               foreach (var property in excelColumns)
+                foreach (var property in excelColumns)
                 {
-                    table.Columns[i].Name = property;
+                    table.Columns[i].Name = string.Concat(property);
                     i++;
                 }
 
@@ -102,6 +151,20 @@ namespace ExcelClient
                 table.ShowFilter = true;
                 //table.ShowTotal = true;
             }
+        }
+
+        public static void CreateExcelTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, string tableName)
+        {
+            var excelColumns = MovementsViewModel.excelColumns;
+
+            // Calculate size of the table
+            var endRow = _startRow + movementsModel.Count + 1;
+            var endColum = _startColumn + excelColumns.Count;// TODO delete the last column in teblae
+
+            // Create Excel table Header
+            CreateExcelTableHeader(wsSheet, tableName, excelColumns, _startRow, endRow, _startColumn, endColum);
+
+           
 
             // Set Excel table content
             var tableStartColumn = _startColumn;
@@ -112,9 +175,9 @@ namespace ExcelClient
                 foreach (var propertyName in excelColumns)
                 {
                     //Get Property name value
-                    var propertyValue =ModelClassServices.GetPropertyValue(movement,propertyName);
+                    var propertyValue = ModelClassServices.GetPropertyValue(movement, propertyName);
                     //add value tu excel cell
-                    AddExcelCellByRowAndColumn(tableStartColumn, row, propertyValue?.ToString(), wsSheet);
+                    AddExcelCellByRowAndColumn(tableStartColumn, row, propertyValue, wsSheet);
                     tableStartColumn++;
                 }
                 tableStartColumn = _startColumn;
@@ -167,7 +230,7 @@ namespace ExcelClient
             excelRange.Style.Border.BorderAround(ExcelBorderStyle.Thin);
 
         }
-        private static void AddExcelCellByRowAndColumn(int column, int row, string value, ExcelWorksheet wsSheet, Color? color = null)
+        private static void AddExcelCellByRowAndColumn(int column, int row, object value, ExcelWorksheet wsSheet, Color? color = null)
         {
             var cellName = string.Concat(GetColumnName(column), row);
             using (ExcelRange rng1 = wsSheet.Cells[cellName])

@@ -103,22 +103,28 @@ namespace homeBudget.Services
         {
             try
             {
-                var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) > 0);
 
-                if (subcategoriesMatch.Count() > 0)
+                if (!string.IsNullOrEmpty(movementModel.Text))
                 {
-                    if (subcategoriesMatch.Count() == 1)
-                        FillUpMovementViewModel(subcategoriesMatch.FirstOrDefault(), ref movementModel);
-                    else
-                        FillUpMovementViewModel(ChoseSubCategory(subcategoriesMatch), ref movementModel);
-                }
-            }
+                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) > 0);
+
+                    if (subcategoriesMatch != null && subcategoriesMatch.Count() > 0)
+                    {
+                        if (subcategoriesMatch.Count() == 1)
+                            FillUpMovementViewModel(subcategoriesMatch.FirstOrDefault(), ref movementModel);
+                        else
+                            FillUpMovementViewModel(ChoseSubCategory(subcategoriesMatch), ref movementModel);
+                    }
+
+                }            }
             catch
             {
                 //
             }
             return movementModel;
         }
+
+       
 
         private static SubCategory ChoseSubCategory(IEnumerable<SubCategory> subcategoriesMatch)
         {
@@ -153,7 +159,13 @@ namespace homeBudget.Services
         {
             try
             {
-                return model.GetType().GetProperty(propertyName).GetValue(model, null);
+                var properties = GetPropertiesNamesFromObject(model);
+                if (properties.Contains(propertyName))
+                {
+                    object result = model.GetType().GetProperty(propertyName).GetValue(model, null);
+                    return result;
+                }
+                return null;
             }
             catch
             {
@@ -165,13 +177,36 @@ namespace homeBudget.Services
         {
             try
             {
-                modelToUpdate.GetType().GetProperty(propertyName).SetValue(modelToUpdate, propertyValue);
-                return true;
+                var properties = GetPropertiesNamesFromObject(modelToUpdate);
+                if (properties.Contains(propertyName))
+                {
+                    modelToUpdate.GetType().GetProperty(propertyName).SetValue(modelToUpdate, propertyValue);
+                    return true; 
+                }
+                return false;
             }
             catch
             {
                 return false;
             }
+        }
+
+        public static IEnumerable<MovementsViewModel> GetAllMonthAndYaerMovements(List<MovementsViewModel> movements, int year, int month)
+        {
+            return movements.Where(move => move.DateTime.Year == year && move.DateTime.Month == month);
+        }
+
+        public static double? GetTotalforCategory(IEnumerable<MovementsViewModel> movements, string category,int? year= null, int? month= null)
+        {
+
+           var monthAndYaerMovements= movements.Where(move => move.DateTime.Year == year && move.DateTime.Month == month);
+
+            if (monthAndYaerMovements.Any())
+            {
+                return monthAndYaerMovements.Where(mov => mov.Category == category).Sum(cat => Math.Abs(cat.Amount)); 
+            }
+            
+            return null;
         }
     }
 }

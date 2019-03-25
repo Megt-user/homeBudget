@@ -101,7 +101,7 @@ namespace ExcelClient.Tests
             json.Should().NotBeNull();
         }
         [Fact]
-        public void createExcel()
+        public void createMovementsExcel()
         {
             Stream SubCategoriesStream = GetAssemblyFile("Categories.xlsx");
             Stream AccountMovmentStream = GetAssemblyFile("Transactions.xlsx");
@@ -114,7 +114,7 @@ namespace ExcelClient.Tests
             List<SubCategory> subCategories = GetSubCategoriesFromJarray(subCategoriesjArray);
             List<AccountMovement> accountMovements = GetAccountMovmentsFromJarray(accountMovmentjArray);
 
-            var modementsViewModels = ModelClassServices.getListOfModementsViewModel(accountMovements, subCategories,"Felles" );
+            var modementsViewModels = ModelClassServices.getListOfModementsViewModel(accountMovements, subCategories, "Felles");
 
             var excelPkg = new ExcelPackage();
             try
@@ -134,7 +134,60 @@ namespace ExcelClient.Tests
                 var noko = e.Message;
             }
             var filename = "MovementsTests";
-            var path = string.Concat(@"c:\temp\");
+            var path = string.Concat(@"h:\temp\");
+            Directory.CreateDirectory(path);
+            var filePath = Path.Combine(path, string.Concat(filename, ".xlsx"));
+            excelPkg?.SaveAs(new FileInfo(filePath));
+
+            File.Exists(filePath).Should().BeTrue();
+        }
+        [Fact]
+        public void createMonthYearSummaryExcel()
+        {
+            //Stream SubCategoriesStream = GetAssemblyFile("Categories.xlsx");
+            //Stream AccountMovmentStream = GetAssemblyFile("Transactions.xlsx");
+            ExcelWorksheet workSheet;
+            ExcelWorksheet workSheet2;
+            using (Stream AccountMovmentStream = GetAssemblyFile("Transactions.xlsx"))
+            {
+                workSheet = GetExcelWorksheet(AccountMovmentStream, "Felles");
+            }
+            using (Stream SubCategoriesStream = GetAssemblyFile("Categories.xlsx"))
+            {
+                workSheet2 = GetExcelWorksheet(SubCategoriesStream);
+            }
+
+            var subCategoriesjArray = JArray.Parse(new ExcelServices().GetJson(workSheet2));
+            var accountMovmentjArray = JArray.Parse(new ExcelServices().GetJson(workSheet));
+            List<SubCategory> categorisModel = GetSubCategoriesFromJarray(subCategoriesjArray);
+            IEnumerable<string> categoryList = categorisModel.Select(cat => cat.Category).Distinct();
+            List<AccountMovement> accountMovements = GetAccountMovmentsFromJarray(accountMovmentjArray);
+
+            var modementsViewModels = ModelClassServices.getListOfModementsViewModel(accountMovements, categorisModel, "Felles");
+
+            var excelPkg = new ExcelPackage();
+            try
+            {
+                //Add excel sheet
+                ExcelWorksheet wsSheet = excelPkg.Workbook.Worksheets.Add("MonthResume");
+
+                //Add Table Title
+                ExcelServices.AddSheetHeading(wsSheet, "TableName");
+
+                // Add "input" and "output" headet to Excel table
+                //ExcelServices.AddTableHeadings(wsSheet, new[] { "col1", "col2", "col3" }, subCategoriesjArray.Count+ accountMovmentjArray.Count);
+
+                //Add transactions to excel Sheet
+                ExcelServices.CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, "TableName", categoryList);
+                //ExcelServices.CreateExcelTableFromMovementsViewModel(modementsViewModels, wsSheet, "TableName", categoryList);
+
+            }
+            catch (Exception e)
+            {
+                var noko = e.Message;
+            }
+            var filename = "MonthResumeTests";
+            var path = string.Concat(@"h:\temp\");
             Directory.CreateDirectory(path);
             var filePath = Path.Combine(path, string.Concat(filename, ".xlsx"));
             excelPkg?.SaveAs(new FileInfo(filePath));
