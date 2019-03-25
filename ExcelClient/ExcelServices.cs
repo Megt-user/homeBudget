@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-using homeBudget.Models;
 using OfficeOpenXml.Table;
 using System.Drawing;
 using System.Globalization;
-using homeBudget.Services;
+using System.IO;
+using Transactions.Models;
+using Transactions.Services;
 
 namespace ExcelClient
 {
@@ -17,6 +17,18 @@ namespace ExcelClient
         private static int _startColumn = 1;
         private static string _heding = "B1";
         private static string _titlecell = "C1";
+
+        public static ExcelWorksheet GetExcelWorksheet(Stream streamFile, string sheetName = null)
+        {
+            ExcelPackage ep = new ExcelPackage(streamFile);
+            ExcelWorksheet workSheet;
+            if (string.IsNullOrEmpty(sheetName))
+                workSheet = ep.Workbook.Worksheets.FirstOrDefault();
+            else
+                workSheet = ep.Workbook.Worksheets["Felles"];
+
+            return workSheet;
+        }
 
         public string GetJson(ExcelWorksheet ws)
         {

@@ -1,12 +1,11 @@
-﻿using homeBudget.Models;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
+using Transactions.Models;
 
-namespace homeBudget.Services
+namespace Transactions.Services
 {
     public class ModelClassServices
     {

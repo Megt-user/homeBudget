@@ -2,17 +2,15 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Xml.Serialization;
 
 using Xunit;
 using FluentAssertions;
 using OfficeOpenXml;
-using homeBudget.Models;
-using homeBudget.Services;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Text;
+using Transactions.Models;
+using Transactions.Services;
 
 namespace ExcelClient.Tests
 {
@@ -43,7 +41,7 @@ namespace ExcelClient.Tests
             List<SubCategory> subcategories = new List<SubCategory>();
             foreach (var subCategory in jarray)
             {
-                subcategories.Add(new JsonServices().GetSubCategory(subCategory));
+                subcategories.Add(JsonServices.GetSubCategory(subCategory));
             }
 
             var table = workSheet.Tables.FirstOrDefault();
@@ -106,8 +104,8 @@ namespace ExcelClient.Tests
             Stream SubCategoriesStream = GetAssemblyFile("Categories.xlsx");
             Stream AccountMovmentStream = GetAssemblyFile("Transactions.xlsx");
 
-            ExcelWorksheet workSheet = GetExcelWorksheet(AccountMovmentStream, "Felles");
-            ExcelWorksheet workSheet2 = GetExcelWorksheet(SubCategoriesStream);
+            ExcelWorksheet workSheet = ExcelServices.GetExcelWorksheet(AccountMovmentStream, "Felles");
+            ExcelWorksheet workSheet2 = ExcelServices.GetExcelWorksheet(SubCategoriesStream);
 
             var subCategoriesjArray = JArray.Parse(new ExcelServices().GetJson(workSheet2));
             var accountMovmentjArray = JArray.Parse(new ExcelServices().GetJson(workSheet));
@@ -150,11 +148,11 @@ namespace ExcelClient.Tests
             ExcelWorksheet workSheet2;
             using (Stream AccountMovmentStream = GetAssemblyFile("Transactions.xlsx"))
             {
-                workSheet = GetExcelWorksheet(AccountMovmentStream, "Felles");
+                workSheet = ExcelServices.GetExcelWorksheet(AccountMovmentStream, "Felles");
             }
             using (Stream SubCategoriesStream = GetAssemblyFile("Categories.xlsx"))
             {
-                workSheet2 = GetExcelWorksheet(SubCategoriesStream);
+                workSheet2 = ExcelServices.GetExcelWorksheet(SubCategoriesStream);
             }
 
             var subCategoriesjArray = JArray.Parse(new ExcelServices().GetJson(workSheet2));
@@ -195,17 +193,7 @@ namespace ExcelClient.Tests
             File.Exists(filePath).Should().BeTrue();
         }
 
-        private static ExcelWorksheet GetExcelWorksheet(Stream streamFile, string sheetName = null)
-        {
-            ExcelPackage ep = new ExcelPackage(streamFile);
-            ExcelWorksheet workSheet;
-            if (string.IsNullOrEmpty(sheetName))
-                workSheet = ep.Workbook.Worksheets.FirstOrDefault();
-            else
-                workSheet = ep.Workbook.Worksheets["Felles"];
-
-            return workSheet;
-        }
+       
 
         private static Stream GetAssemblyFile(string fileName)
         {

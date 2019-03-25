@@ -38,6 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ClassLibrary1\Transactions.csproj" />
     <ProjectReference Include="..\ExcelClient\ExcelClient.csproj" />
     <ProjectReference Include="..\homeBudget\homeBudget.csproj" />
   </ItemGroup>

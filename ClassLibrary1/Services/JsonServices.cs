@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using homeBudget.Models;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Transactions.Models;
 
-namespace homeBudget.Services
+namespace Transactions.Services
 {
     public class JsonServices
     {
-        public SubCategory GetSubCategory(JToken json)
+        public static SubCategory GetSubCategory(JToken json)
         {
             return json.ToObject<SubCategory>();
             //var subCategory = Newtonsoft.Json.JsonConvert.DeserializeObject<SubCategories>(json);

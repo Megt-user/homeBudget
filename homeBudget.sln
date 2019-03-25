@@ -7,7 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "homeBudget", "homeBudget\ho
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelClient", "ExcelClient\ExcelClient.csproj", "{3262635B-7CF7-4B09-B2DE-505BE0217514}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelClient.Tests", "ExcelClient.Tests\ExcelClient.Tests.csproj", "{8A94039E-31B5-4715-81BD-2111698AC077}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExcelClient.Tests", "ExcelClient.Tests\ExcelClient.Tests.csproj", "{8A94039E-31B5-4715-81BD-2111698AC077}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Transactions", "ClassLibrary1\Transactions.csproj", "{B0FDB1F7-73ED-441D-9D3A-1D4B79A6173F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{8A94039E-31B5-4715-81BD-2111698AC077}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A94039E-31B5-4715-81BD-2111698AC077}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8A94039E-31B5-4715-81BD-2111698AC077}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0FDB1F7-73ED-441D-9D3A-1D4B79A6173F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0FDB1F7-73ED-441D-9D3A-1D4B79A6173F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0FDB1F7-73ED-441D-9D3A-1D4B79A6173F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0FDB1F7-73ED-441D-9D3A-1D4B79A6173F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
