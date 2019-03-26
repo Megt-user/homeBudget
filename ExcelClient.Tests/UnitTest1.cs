@@ -109,8 +109,8 @@ namespace ExcelClient.Tests
 
             var subCategoriesjArray = JArray.Parse(new ExcelServices().GetJson(workSheet2));
             var accountMovmentjArray = JArray.Parse(new ExcelServices().GetJson(workSheet));
-            List<SubCategory> subCategories = GetSubCategoriesFromJarray(subCategoriesjArray);
-            List<AccountMovement> accountMovements = GetAccountMovmentsFromJarray(accountMovmentjArray);
+            List<SubCategory> subCategories = ModelClassServices.GetSubCategoriesFromJarray(subCategoriesjArray);
+            List<AccountMovement> accountMovements = ModelClassServices.GetAccountMovmentsFromJarray(accountMovmentjArray);
 
             var modementsViewModels = ModelClassServices.getListOfModementsViewModel(accountMovements, subCategories, "Felles");
 
@@ -157,9 +157,9 @@ namespace ExcelClient.Tests
 
             var subCategoriesjArray = JArray.Parse(new ExcelServices().GetJson(workSheet2));
             var accountMovmentjArray = JArray.Parse(new ExcelServices().GetJson(workSheet));
-            List<SubCategory> categorisModel = GetSubCategoriesFromJarray(subCategoriesjArray);
+            List<SubCategory> categorisModel = ModelClassServices.GetSubCategoriesFromJarray(subCategoriesjArray);
             IEnumerable<string> categoryList = categorisModel.Select(cat => cat.Category).Distinct();
-            List<AccountMovement> accountMovements = GetAccountMovmentsFromJarray(accountMovmentjArray);
+            List<AccountMovement> accountMovements = ModelClassServices.GetAccountMovmentsFromJarray(accountMovmentjArray);
 
             var modementsViewModels = ModelClassServices.getListOfModementsViewModel(accountMovements, categorisModel, "Felles");
 
@@ -176,7 +176,7 @@ namespace ExcelClient.Tests
                 //ExcelServices.AddTableHeadings(wsSheet, new[] { "col1", "col2", "col3" }, subCategoriesjArray.Count+ accountMovmentjArray.Count);
 
                 //Add transactions to excel Sheet
-                ExcelServices.CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, "TableName", categoryList);
+                ExcelServices.CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, categoryList);
                 //ExcelServices.CreateExcelTableFromMovementsViewModel(modementsViewModels, wsSheet, "TableName", categoryList);
 
             }
@@ -219,25 +219,7 @@ namespace ExcelClient.Tests
             return jArray;
         }
 
-        private static List<SubCategory> GetSubCategoriesFromJarray(JArray jArray)
-        {
-
-            var subCategories = new List<SubCategory>();
-            foreach (var item in jArray)
-            {
-                subCategories.Add(new ModelClassServices().JsonToSubCategory(item));
-            }
-            return subCategories;
-        }
-        private static List<AccountMovement> GetAccountMovmentsFromJarray(JArray jArray)
-        {
-
-            var accountmovments = new List<AccountMovement>();
-            foreach (var item in jArray)
-            {
-                accountmovments.Add((AccountMovement)ModelClassServices.ParseObjectProperties(new AccountMovement(), item));
-            }
-            return accountmovments;
-        }
+       
+        
     }
 }
