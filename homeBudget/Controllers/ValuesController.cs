@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using homeBudget.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Transactions.Models;
 
 namespace homeBudget.Controllers
 {
