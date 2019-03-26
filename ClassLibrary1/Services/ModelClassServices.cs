@@ -16,6 +16,26 @@ namespace Transactions.Services
             return accountMovement;
         }
 
+        public static List<SubCategory> GetSubCategoriesFromJarray(JArray jArray)
+        {
+            var subCategories = new List<SubCategory>();
+            foreach (var item in jArray)
+            {
+                subCategories.Add(new ModelClassServices().JsonToSubCategory(item));
+            }
+            return subCategories;
+        }
+
+        public static List<AccountMovement> GetAccountMovmentsFromJarray(JArray jArray)
+        {
+
+            var accountmovments = new List<AccountMovement>();
+            foreach (var item in jArray)
+            {
+                accountmovments.Add((AccountMovement)ModelClassServices.ParseObjectProperties(new AccountMovement(), item));
+            }
+            return accountmovments;
+        }
 
         public SubCategory JsonToSubCategory(JToken json)
         {

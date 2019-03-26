@@ -18,6 +18,38 @@ namespace ExcelClient
         private static string _heding = "B1";
         private static string _titlecell = "C1";
 
+
+
+        public static void CreateSheetWithTransactionMovments(List<MovementsViewModel> modementsViewModels, ExcelPackage excelPkg, string sheetName, string sheetHeading, string tableName)
+        {
+            ExcelWorksheet wsSheet;
+            if (string.IsNullOrEmpty(sheetName))
+                wsSheet = excelPkg.Workbook.Worksheets.Add("sheet01");
+            else
+                wsSheet = excelPkg.Workbook.Worksheets.Add(sheetName);
+
+            //Add Table Title
+            AddSheetHeading(wsSheet, sheetHeading);
+
+            //Add transactions to excel Sheet
+            CreateExcelTableFromMovementsViewModel(modementsViewModels, wsSheet, tableName);
+        }
+
+        public static void CreateSheetWithMonthSummary(List<MovementsViewModel> modementsViewModels, ExcelPackage excelPkg, string sheetName, string sheetHeading, IEnumerable<string> categoryList)
+        {
+            ExcelWorksheet wsSheet;
+            if (string.IsNullOrEmpty(sheetName))
+                wsSheet = excelPkg.Workbook.Worksheets.Add("MonthSummaries");
+            else
+                wsSheet = excelPkg.Workbook.Worksheets.Add(sheetName);
+
+            //Add Table Title
+            AddSheetHeading(wsSheet, "TableName");
+
+            //Add transactions to excel Sheet
+            CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, categoryList);
+        }
+
         public static ExcelWorksheet GetExcelWorksheet(Stream streamFile, string sheetName = null)
         {
             ExcelPackage ep = new ExcelPackage(streamFile);
@@ -68,6 +100,8 @@ namespace ExcelClient
             return json;
         }
 
+
+
         public static void AddSheetHeading(ExcelWorksheet wsSheet, string tableTitle)
         {
             wsSheet.Cells[_heding].Value = "Table Name";
@@ -83,14 +117,14 @@ namespace ExcelClient
                 tableHeadingFormat(rng, "Input");
             }
         }
-        public static void CreateExcelMonthSummaryTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, string tableName, IEnumerable<string> excelColumns)
+        public static void CreateExcelMonthSummaryTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, IEnumerable<string> excelColumns)
         {
             var minYear = movementsModel.Min(mov => mov.DateTime.Year);
             var maxYear = movementsModel.Max(mov => mov.DateTime.Year);
             // Calculate size of the table
             var endRow = _startRow + 12;
             var endColum = _startColumn + excelColumns.Count();
-           
+
             // Create Excel table Header
             int startRow = _startRow;
             int startColumn = _startColumn;
@@ -99,13 +133,13 @@ namespace ExcelClient
             for (int year = minYear; year <= maxYear; year++)
             {
                 //give table Name
-                tableName = string.Concat("Table-", year);
+                var tableName = string.Concat("Table-", year);
 
                 //add month column to Ienumeration
                 IEnumerable<string> TemExcelColumn = new[] { "Month" };
                 var newExcelColumn = TemExcelColumn.Concat(excelColumns);
                 // add Headers to table
-                CreateExcelTableHeader(wsSheet, tableName, newExcelColumn, startRow, endRow, _startColumn, endColum + 1);
+                CreateExcelTableHeader(wsSheet, tableName, newExcelColumn, startRow, endRow, _startColumn, endColum + 1, true);
 
                 var tableStartColumn = _startColumn;
                 row++;
@@ -117,7 +151,7 @@ namespace ExcelClient
                     AddExcelCellByRowAndColumn(tableStartColumn, row, monthName, wsSheet);
                     foreach (var category in newExcelColumn)
                     {
-                        if (category!="Month")
+                        if (category != "Month")
                         {
                             //Get summ for category
                             double? totalCategory = ModelClassServices.GetTotalforCategory(movementsModel, category, year, month);
@@ -140,9 +174,9 @@ namespace ExcelClient
             wsSheet.Cells[wsSheet.Dimension.Address].AutoFitColumns();
         }
 
-        private static void CreateExcelTableHeader(ExcelWorksheet wsSheet, string tableName, IEnumerable<string> excelColumns, int startRow, int endRow, int startColumn, int endColum)
+        private static void CreateExcelTableHeader(ExcelWorksheet wsSheet, string tableName, IEnumerable<string> excelColumns, int startRow, int endRow, int startColumn, int endColum, bool ShowTotal = false)
         {
-            using (ExcelRange rng = wsSheet.Cells[startRow, startColumn, endRow, endColum])
+            using (ExcelRange rng = wsSheet.Cells[startRow, startColumn, endRow, endColum-1])
             {
                 //Indirectly access ExcelTableCollection class
                 ExcelTable table = wsSheet.Tables.Add(rng, tableName);
@@ -152,6 +186,12 @@ namespace ExcelClient
                 foreach (var property in excelColumns)
                 {
                     table.Columns[i].Name = string.Concat(property);
+                    // add aggregate formulas (get these from an existing table in Excel)
+                    //table.Columns[1].TotalsRowFormula = "SUBTOTAL(103,[Column1])"; // count
+
+                    if (i!=0)
+                        table.Columns[i].TotalsRowFormula = $"SUBTOTAL(109,[{property}])"; // sum 
+                    //table.Columns[3].TotalsRowFormula = "SUBTOTAL(101,[Column3])"; // average
                     i++;
                 }
 
@@ -161,7 +201,7 @@ namespace ExcelClient
 
                 table.ShowHeader = true;
                 table.ShowFilter = true;
-                //table.ShowTotal = true;
+                table.ShowTotal = ShowTotal;
             }
         }
 
@@ -176,7 +216,7 @@ namespace ExcelClient
             // Create Excel table Header
             CreateExcelTableHeader(wsSheet, tableName, excelColumns, _startRow, endRow, _startColumn, endColum);
 
-           
+
 
             // Set Excel table content
             var tableStartColumn = _startColumn;
