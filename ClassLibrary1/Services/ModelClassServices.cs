@@ -45,6 +45,15 @@ namespace Transactions.Services
             return subCategories;
 
         }
+
+        public MovementsViewModel JsonToMovementsViewModels(JToken json)
+        {
+            var movementsViewModel = new MovementsViewModel();
+            var noko = ParseObjectProperties(movementsViewModel, json);
+
+            return movementsViewModel;
+        }
+
         public static object ParseObjectProperties(Object model, JToken json)
         {
             var type = model.GetType();
@@ -135,7 +144,8 @@ namespace Transactions.Services
                             FillUpMovementViewModel(ChoseSubCategory(subcategoriesMatch), ref movementModel);
                     }
 
-                }            }
+                }
+            }
             catch
             {
                 //
@@ -143,7 +153,7 @@ namespace Transactions.Services
             return movementModel;
         }
 
-       
+
 
         private static SubCategory ChoseSubCategory(IEnumerable<SubCategory> subcategoriesMatch)
         {
@@ -200,7 +210,7 @@ namespace Transactions.Services
                 if (properties.Contains(propertyName))
                 {
                     modelToUpdate.GetType().GetProperty(propertyName).SetValue(modelToUpdate, propertyValue);
-                    return true; 
+                    return true;
                 }
                 return false;
             }
@@ -215,17 +225,43 @@ namespace Transactions.Services
             return movements.Where(move => move.DateTime.Year == year && move.DateTime.Month == month);
         }
 
-        public static double? GetTotalforCategory(IEnumerable<MovementsViewModel> movements, string category,int? year= null, int? month= null)
+        public static double? GetTotalforCategory(IEnumerable<MovementsViewModel> movements, string category, int? year = null, int? month = null)
         {
 
-           var monthAndYaerMovements= movements.Where(move => move.DateTime.Year == year && move.DateTime.Month == month);
+            var monthAndYaerMovements = movements.Where(move => move.DateTime.Year == year && move.DateTime.Month == month);
 
             if (monthAndYaerMovements.Any())
             {
-                return monthAndYaerMovements.Where(mov => mov.Category == category).Sum(cat => Math.Abs(cat.Amount)); 
+                return monthAndYaerMovements.Where(mov => mov.Category == category).Sum(cat => Math.Abs(cat.Amount));
             }
-            
+
             return null;
         }
+        public static double? GetCategoriesMonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null)
+        {
+
+            var monthAndYaerMovements = movements.Where(mov => !string.IsNullOrEmpty(mov.Category) && mov.DateTime.Year == year && mov.DateTime.Month == month);
+
+            if (monthAndYaerMovements.Any())
+            {
+                return monthAndYaerMovements.Sum(cat => Math.Abs(cat.Amount));
+            }
+
+            return null;
+        }
+        public static double? GetMonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null)
+        {
+
+            var monthAndYaerMovements = movements.Where(mov => mov.DateTime.Year == year && mov.DateTime.Month == month);
+
+            if (monthAndYaerMovements.Any())
+            {
+                return monthAndYaerMovements.Sum(cat => Math.Abs(cat.Amount));
+            }
+
+            return null;
+        }
+
+
     }
 }
