@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using Transactions.Models;
 using Transactions.Services;
+using System;
 
 namespace ExcelClient
 {
@@ -35,8 +36,12 @@ namespace ExcelClient
             CreateExcelTableFromMovementsViewModel(modementsViewModels, wsSheet, tableName);
         }
 
-        public static void CreateSheetWithMonthSummary(List<MovementsViewModel> modementsViewModels, ExcelPackage excelPkg, string sheetName, string sheetHeading, IEnumerable<string> categoryList)
+        public static void CreateSheetWithMonthSummary(List<MovementsViewModel> modementsViewModels, ExcelPackage excelPkg, string sheetName, string sheetHeading, IEnumerable<string> categoryList, string tableStartAdress = null)
         {
+
+            if (!string.IsNullOrEmpty(tableStartAdress))
+                SetStartRowAndColum(tableStartAdress);
+
             ExcelWorksheet wsSheet;
             if (string.IsNullOrEmpty(sheetName))
                 wsSheet = excelPkg.Workbook.Worksheets.Add("MonthSummaries");
@@ -49,6 +54,15 @@ namespace ExcelClient
             //Add transactions to excel Sheet
             CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, categoryList);
         }
+        public static void AddYearExpensesTable(List<MovementsViewModel> modementsViewModels, IEnumerable<string> categoryList, ExcelWorksheet wsSheet, string tableStartAdress = null, int year = 0)
+        {
+
+            if (!string.IsNullOrEmpty(tableStartAdress))
+                SetStartRowAndColum(tableStartAdress);
+
+            //Add transactions to excel Sheet
+            CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, categoryList, year);
+        }
 
         public static ExcelWorksheet GetExcelWorksheet(Stream streamFile, string sheetName = null)
         {
@@ -57,7 +71,7 @@ namespace ExcelClient
             if (string.IsNullOrEmpty(sheetName))
                 workSheet = ep.Workbook.Worksheets.FirstOrDefault();
             else
-                workSheet = ep.Workbook.Worksheets["Felles"];
+                workSheet = ep.Workbook.Worksheets[sheetName];
 
             return workSheet;
         }
@@ -117,29 +131,47 @@ namespace ExcelClient
                 tableHeadingFormat(rng, "Input");
             }
         }
-        public static void CreateExcelMonthSummaryTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, IEnumerable<string> excelColumns)
+        public static void CreateExcelMonthSummaryTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, IEnumerable<string> excelColumns, int sheetYear = 0)
         {
-            var minYear = movementsModel.Min(mov => mov.DateTime.Year);
-            var maxYear = movementsModel.Max(mov => mov.DateTime.Year);
+            int minYear;
+            int maxYear;
+            IEnumerable<string> TemExcelColumn;
+            if (sheetYear > 0)
+            {
+                minYear = sheetYear;
+                maxYear = sheetYear;
+                //add month ant total column to Ienumeration
+                TemExcelColumn = new[] { "Month", "Total" };
+            }
+            else
+            {
+                minYear = movementsModel.Min(mov => mov.DateTime.Year);
+                maxYear = movementsModel.Max(mov => mov.DateTime.Year);
+                //add month column to Ienumeration
+                TemExcelColumn = new[] { "Month" };
+            }
+
+            // and the new columns to the category
+            var newExcelColumn = TemExcelColumn.Concat(excelColumns);
+
+
             // Calculate size of the table
             var endRow = _startRow + 12;
-            var endColum = _startColumn + excelColumns.Count();
+            var endColum = _startColumn + newExcelColumn.Count();
 
             // Create Excel table Header
             int startRow = _startRow;
             int startColumn = _startColumn;
 
-            var row = _startRow + 1;
+            //var row = _startRow + 1;
+            var row = _startRow;
             for (int year = minYear; year <= maxYear; year++)
             {
                 //give table Name
                 var tableName = string.Concat("Table-", year);
 
-                //add month column to Ienumeration
-                IEnumerable<string> TemExcelColumn = new[] { "Month" };
-                var newExcelColumn = TemExcelColumn.Concat(excelColumns);
                 // add Headers to table
-                CreateExcelTableHeader(wsSheet, tableName, newExcelColumn, startRow, endRow, _startColumn, endColum + 1, true);
+                CreateExcelTableHeader(wsSheet, tableName, newExcelColumn, startRow, endRow, _startColumn, endColum, true);
 
                 var tableStartColumn = _startColumn;
                 row++;
@@ -148,10 +180,17 @@ namespace ExcelClient
                 for (int month = 1; month <= 12; month++)
                 {
                     var monthName = string.Concat(DateTimeFormatInfo.CurrentInfo.GetMonthName(month));
+
                     AddExcelCellByRowAndColumn(tableStartColumn, row, monthName, wsSheet);
+                    if (year > 0)
+                    {
+                        //Get summ for category
+                        double? totalCategory = ModelClassServices.GetCategoriesMonthYearTotal(movementsModel, year, month);
+                        AddExcelCellByRowAndColumn(tableStartColumn + 1, row, totalCategory, wsSheet);
+                    }
                     foreach (var category in newExcelColumn)
                     {
-                        if (category != "Month")
+                        if (category != "Month" && category != "Total")
                         {
                             //Get summ for category
                             double? totalCategory = ModelClassServices.GetTotalforCategory(movementsModel, category, year, month);
@@ -176,7 +215,7 @@ namespace ExcelClient
 
         private static void CreateExcelTableHeader(ExcelWorksheet wsSheet, string tableName, IEnumerable<string> excelColumns, int startRow, int endRow, int startColumn, int endColum, bool ShowTotal = false)
         {
-            using (ExcelRange rng = wsSheet.Cells[startRow, startColumn, endRow, endColum-1])
+            using (ExcelRange rng = wsSheet.Cells[startRow, startColumn, endRow, endColum - 1])
             {
                 //Indirectly access ExcelTableCollection class
                 ExcelTable table = wsSheet.Tables.Add(rng, tableName);
@@ -189,7 +228,7 @@ namespace ExcelClient
                     // add aggregate formulas (get these from an existing table in Excel)
                     //table.Columns[1].TotalsRowFormula = "SUBTOTAL(103,[Column1])"; // count
 
-                    if (i!=0)
+                    if (i != 0)
                         table.Columns[i].TotalsRowFormula = $"SUBTOTAL(109,[{property}])"; // sum 
                     //table.Columns[3].TotalsRowFormula = "SUBTOTAL(101,[Column3])"; // average
                     i++;
@@ -296,7 +335,7 @@ namespace ExcelClient
             }
         }
 
-        private int GetColumnIndex(string columnName)
+        public static int GetColumnIndex(string columnName)
         {
             const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             var index = letters.ToLower().IndexOf(columnName.ToLower());
@@ -304,18 +343,42 @@ namespace ExcelClient
             return index + 1;
         }
 
-        private static string GetColumnName(int index)
+        public static string GetColumnName(int index)
         {
-            const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            int dividend = index;
+            string columnName = String.Empty;
+            int modulo;
 
-            var value = "";
+            while (dividend > 0)
+            {
+                modulo = (dividend - 1) % 26;
+                columnName = Convert.ToChar(65 + modulo).ToString() + columnName;
+                dividend = (int)((dividend - modulo) / 26);
+            }
 
-            if (index >= letters.Length)
-                value += letters[index / letters.Length - 1];
-            else
-                value += letters[index % letters.Length - 1];
+            return columnName;
+        }
 
-            return value;
+
+        public static void SetStartRowAndColum(string cellAdress)
+        {
+            if (!string.IsNullOrEmpty(cellAdress))
+            {
+                var column = string.Empty;
+                var row = string.Empty;
+                foreach (char c in cellAdress)
+                {
+                    if (char.IsLetter(c))
+                        column += c;
+                    if (char.IsNumber(c))
+                        row += c;
+                }
+                int rowNumber;
+                int.TryParse(row, out rowNumber);
+
+                _startRow = rowNumber;
+                _startColumn = ExcelServices.GetColumnIndex(column);
+            }
         }
 
 
