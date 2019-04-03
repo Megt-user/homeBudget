@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Text;
 using Transactions.Models;
 using Transactions.Services;
+using OfficeOpenXml.Table;
 
 namespace ExcelClient.Tests
 {
@@ -185,6 +186,60 @@ namespace ExcelClient.Tests
                 var noko = e.Message;
             }
             var filename = "MonthResumeTests";
+            var path = string.Concat(@"h:\temp\");
+            Directory.CreateDirectory(path);
+            var filePath = Path.Combine(path, string.Concat(filename, ".xlsx"));
+            excelPkg?.SaveAs(new FileInfo(filePath));
+
+            File.Exists(filePath).Should().BeTrue();
+        }
+
+        [Fact]
+        public void UpdateCashFlow()
+        {
+            JArray JsonmodementsViewModels;
+            JArray JsonCategoryList;
+            Encoding encoding = Encoding.GetEncoding(28591);
+
+            using (StreamReader stream = new StreamReader(GetAssemblyFile("TransactionViewModelArray.json"), encoding, true))
+            {
+                JsonmodementsViewModels = JArray.Parse(stream.ReadToEnd());
+            }
+            using (StreamReader stream = new StreamReader(GetAssemblyFile("CategoriesArray.json"), encoding, true))
+            {
+                JsonCategoryList = JArray.Parse(stream.ReadToEnd());
+            }
+            var movementsViewModels = new List<MovementsViewModel>();
+            foreach (var item in JsonmodementsViewModels)
+            {
+                movementsViewModels.Add(new ModelClassServices().JsonToMovementsViewModels(item));
+            }
+            List<string> categoryListTemp = new List<string>();
+            foreach (var item in JsonCategoryList)
+            {
+                categoryListTemp.Add(item.ToString());
+            }
+            IEnumerable<string> categoryList = categoryListTemp;
+
+          
+            var excelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow - Copy.xlsx"));
+            ExcelTable yearBudget;
+            try
+            {
+             var  workSheet = excelPkg.Workbook.Worksheets["Expenses details"];
+                yearBudget = workSheet.Tables.First(t => t.Name == "YearExpenses");
+                //var tableStartAdress = yearBudget.Address.Start.Address;
+                var tableStartAdress = "B54";
+                var year = 2018;
+
+                
+                ExcelServices.AddYearExpensesTable(movementsViewModels, categoryList, workSheet, tableStartAdress, year);
+            }
+            catch (Exception e)
+            {
+                var noko = e.Message;
+            }
+            var filename = "Budget Cashflow Temp";
             var path = string.Concat(@"h:\temp\");
             Directory.CreateDirectory(path);
             var filePath = Path.Combine(path, string.Concat(filename, ".xlsx"));
