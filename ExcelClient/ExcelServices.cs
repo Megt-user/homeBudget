@@ -281,7 +281,7 @@ namespace ExcelClient
             wsSheet.Cells[wsSheet.Dimension.Address].AutoFitColumns();
         }
 
-        public static void UpdateTableValues(List<MovementsViewModel> movementsViewModels, Dictionary<string, string> categoriesAddressdictionary, int year, 
+        public static void UpdateYearTableValues(Dictionary<string, string> categoriesAddressdictionary, int year, 
             ExcelWorksheet workSheet, string tableName, string columnName, string dictionaryKey)
         {
             //TODO check if dictionary have key and if Table have column name

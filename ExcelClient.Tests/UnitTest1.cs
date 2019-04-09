@@ -243,10 +243,11 @@ namespace ExcelClient.Tests
 
                 var yearWSheet = excelPkg.Workbook.Worksheets["Year summary"];
 
-                ExcelServices.UpdateTableValues(movementsViewModels, CategoriesAddressWithTotals, year, yearWSheet, "tblOperatingExpenses", "BUDGET", "Total");
-                ExcelServices.UpdateTableValues(movementsViewModels, CategoriesAddress, year, yearWSheet, "tblOperatingExpenses", "ACTUAL", "Total");
+                ExcelServices.UpdateYearTableValues(CategoriesAddressWithTotals, year, yearWSheet, "tblOperatingExpenses", "BUDGET", "Total");
+                ExcelServices.UpdateYearTableValues(CategoriesAddress, year, yearWSheet, "tblOperatingExpenses", "ACTUAL", "Total");
 
 
+                var monthWSheet = excelPkg.Workbook.Worksheets["Monthly summary"];
 
 
 
