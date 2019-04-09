@@ -219,21 +219,37 @@ namespace ExcelClient.Tests
             {
                 categoryListTemp.Add(item.ToString());
             }
+           
             IEnumerable<string> categoryList = categoryListTemp;
 
-          
-            var excelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow - Copy.xlsx"));
+
+            var excelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow.xlsx"));
             ExcelTable yearBudget;
             try
             {
-             var  workSheet = excelPkg.Workbook.Worksheets["Expenses details"];
-                yearBudget = workSheet.Tables.First(t => t.Name == "YearExpenses");
-                //var tableStartAdress = yearBudget.Address.Start.Address;
-                var tableStartAdress = "B54";
+                var ExpensesWSheet = excelPkg.Workbook.Worksheets["Expenses details"];
+
                 var year = 2018;
 
-                
-                ExcelServices.AddYearExpensesTable(movementsViewModels, categoryList, workSheet, tableStartAdress, year);
+                //workSheet.Tables.Delete("YearExpenses");
+
+                ExcelServices.CreateYearExpensesTable(movementsViewModels, categoryList, year, ExpensesWSheet, "YearExpenses", "B38");
+                var excelcolumn = categoryList.ToList();
+                excelcolumn.Add("Sub Total");
+                excelcolumn.Add("Total");
+                IEnumerable<string> categoryListWithTotals = excelcolumn;
+                var CategoriesAddressWithTotals = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "Year_budget");
+                var CategoriesAddress = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "YearExpenses");
+
+                var yearWSheet = excelPkg.Workbook.Worksheets["Year summary"];
+
+                ExcelServices.UpdateTableValues(movementsViewModels, CategoriesAddressWithTotals, year, yearWSheet, "tblOperatingExpenses", "BUDGET", "Total");
+                ExcelServices.UpdateTableValues(movementsViewModels, CategoriesAddress, year, yearWSheet, "tblOperatingExpenses", "ACTUAL", "Total");
+
+
+
+
+
             }
             catch (Exception e)
             {
@@ -248,7 +264,7 @@ namespace ExcelClient.Tests
             File.Exists(filePath).Should().BeTrue();
         }
 
-       
+
 
         private static Stream GetAssemblyFile(string fileName)
         {
@@ -274,7 +290,7 @@ namespace ExcelClient.Tests
             return jArray;
         }
 
-       
-        
+
+
     }
 }

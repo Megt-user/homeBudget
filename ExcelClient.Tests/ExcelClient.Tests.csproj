@@ -8,9 +8,8 @@
 
   <ItemGroup>
     <None Remove="TestData\AccountMovment.json" />
-    <None Remove="TestData\Budget Cashflow - Copy.xlsx" />
+    <None Remove="TestData\Budget Cashflow Original.xlsx" />
     <None Remove="TestData\Budget Cashflow.xlsx" />
-    <None Remove="TestData\Budget Cashflow1.xlsx" />
     <None Remove="TestData\Categories.xlsx" />
     <None Remove="TestData\CategoriesArray.json" />
     <None Remove="TestData\SubCategories.json" />
@@ -21,9 +20,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="TestData\AccountMovment.json" />
-    <EmbeddedResource Include="TestData\Budget Cashflow - Copy.xlsx" />
     <EmbeddedResource Include="TestData\Budget Cashflow.xlsx" />
-    <EmbeddedResource Include="TestData\Budget Cashflow1.xlsx" />
+    <EmbeddedResource Include="TestData\Budget Cashflow Original.xlsx" />
     <EmbeddedResource Include="TestData\Categories.xlsx">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
