@@ -54,15 +54,16 @@ namespace ExcelClient
             //Add transactions to excel Sheet
             CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, categoryList);
         }
-        public static void AddYearExpensesTable(List<MovementsViewModel> modementsViewModels, IEnumerable<string> categoryList, ExcelWorksheet wsSheet, string tableStartAdress = null, int year = 0)
+        public static void CreateYearExpensesTable(List<MovementsViewModel> modementsViewModels, IEnumerable<string> categoryList, int year,
+            ExcelWorksheet workSheet, string tableName, string tableStartAdress)
         {
 
-            if (!string.IsNullOrEmpty(tableStartAdress))
-                SetStartRowAndColum(tableStartAdress);
-
+            SetStartRowAndColum(tableStartAdress);
             //Add transactions to excel Sheet
-            CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, categoryList, year);
+            CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, workSheet, categoryList, year, "YearExpenses");
         }
+
+
 
         public static ExcelWorksheet GetExcelWorksheet(Stream streamFile, string sheetName = null)
         {
@@ -131,7 +132,7 @@ namespace ExcelClient
                 tableHeadingFormat(rng, "Input");
             }
         }
-        public static void CreateExcelMonthSummaryTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, IEnumerable<string> excelColumns, int sheetYear = 0)
+        public static void CreateExcelMonthSummaryTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, IEnumerable<string> excelColumns, int sheetYear = 0, string sheetTableName = null)
         {
             int minYear;
             int maxYear;
@@ -168,7 +169,7 @@ namespace ExcelClient
             for (int year = minYear; year <= maxYear; year++)
             {
                 //give table Name
-                var tableName = string.Concat("Table-", year);
+             var   tableName = sheetTableName ?? string.Concat("Table-", year);
 
                 // add Headers to table
                 CreateExcelTableHeader(wsSheet, tableName, newExcelColumn, startRow, endRow, _startColumn, endColum, true);
@@ -181,12 +182,12 @@ namespace ExcelClient
                 {
                     var monthName = string.Concat(DateTimeFormatInfo.CurrentInfo.GetMonthName(month));
 
-                    AddExcelCellByRowAndColumn(tableStartColumn, row, monthName, wsSheet);
-                    if (year > 0)
+                    AddExcelCellValue(tableStartColumn, row, monthName, wsSheet);
+                    if (sheetYear > 0)
                     {
                         //Get summ for category
                         double? totalCategory = ModelClassServices.GetCategoriesMonthYearTotal(movementsModel, year, month);
-                        AddExcelCellByRowAndColumn(tableStartColumn + 1, row, totalCategory, wsSheet);
+                        AddExcelCellValue(tableStartColumn + 1, row, totalCategory, wsSheet);
                     }
                     foreach (var category in newExcelColumn)
                     {
@@ -196,7 +197,7 @@ namespace ExcelClient
                             double? totalCategory = ModelClassServices.GetTotalforCategory(movementsModel, category, year, month);
 
                             //add value tu excel cell
-                            AddExcelCellByRowAndColumn(tableStartColumn, row, totalCategory, wsSheet);
+                            AddExcelCellValue(tableStartColumn, row, totalCategory, wsSheet);
                         }
                         tableStartColumn++;
                     }
@@ -268,7 +269,7 @@ namespace ExcelClient
                     //Get Property name value
                     var propertyValue = ModelClassServices.GetPropertyValue(movement, propertyName);
                     //add value tu excel cell
-                    AddExcelCellByRowAndColumn(tableStartColumn, row, propertyValue, wsSheet);
+                    AddExcelCellValue(tableStartColumn, row, propertyValue, wsSheet);
                     tableStartColumn++;
                 }
                 tableStartColumn = _startColumn;
@@ -280,7 +281,50 @@ namespace ExcelClient
             wsSheet.Cells[wsSheet.Dimension.Address].AutoFitColumns();
         }
 
-        private static SubCategory ChoseSubCategory(IEnumerable<SubCategory> subcategoriesMatch)
+        public static void UpdateTableValues(List<MovementsViewModel> movementsViewModels, Dictionary<string, string> categoriesAddressdictionary, int year, 
+            ExcelWorksheet workSheet, string tableName, string columnName, string dictionaryKey)
+        {
+            //TODO check if dictionary have key and if Table have column name
+
+            var addressDictionary = GetTableStartAdress(workSheet, tableName);
+
+            // Get cell address
+            var columnNameAdress = GetColumnNameAdress(columnName, workSheet, tableName);
+            var dictionaryKeyAddress = categoriesAddressdictionary[dictionaryKey];
+
+            //Get Row and Colum Index
+            var columNamecellIndex = GetRowAndColumIndex(columnNameAdress);
+
+            if (addressDictionary.Any())
+            {
+                for (int month = 1; month <= 12; month++)
+                {
+                    string newCellAdress = AddRowAndColumnToCellAddress(categoriesAddressdictionary[dictionaryKey], month, 0);
+                    AddExcelCellFormula(columNamecellIndex["column"], columNamecellIndex["row"] + month, newCellAdress, workSheet);
+                }
+
+            }
+        }
+
+        private static string AddRowAndColumnToCellAddress(string address, int row, int column)
+        {
+
+
+            var addressAndWorkSheet = address.Split("!");
+
+            var cellAddress = addressAndWorkSheet.Length > 1 ? addressAndWorkSheet[1] : addressAndWorkSheet[0];
+
+            var dictionaryKeyIndex = GetRowAndColumIndex(cellAddress);
+
+            if (dictionaryKeyIndex.Any())
+            {
+                var newaddress = $"{GetColumnName(dictionaryKeyIndex["column"] + column)}{dictionaryKeyIndex["row"] + row}";
+                return addressAndWorkSheet.Length > 1 ? $"{addressAndWorkSheet[0]}!{newaddress}" : newaddress;
+            }
+            return null;
+        }
+
+        private static SubCategory SetSubCategoryToExpense(IEnumerable<SubCategory> subcategoriesMatch)
         {
             var subcategory = new SubCategory();
             var moreThanOneCategory = subcategoriesMatch.Select(sub => sub.Category).Distinct().Count() > 1;
@@ -304,7 +348,7 @@ namespace ExcelClient
             foreach (var property in subCategoryProperties)
             {
                 string valueString = valueString = subcategory.GetType().GetProperty(property).GetValue(subcategory, null)?.ToString();
-                AddExcelCellByRowAndColumn(subCategoryColumn, row, valueString, wsSheet);
+                AddExcelCellValue(subCategoryColumn, row, valueString, wsSheet);
                 subCategoryColumn++;
             }
         }
@@ -321,10 +365,35 @@ namespace ExcelClient
             excelRange.Style.Border.BorderAround(ExcelBorderStyle.Thin);
 
         }
-        private static void AddExcelCellByRowAndColumn(int column, int row, object value, ExcelWorksheet wsSheet, Color? color = null)
+        public static void AddExcelCellValue(int column, int row, object value, ExcelWorksheet wsSheet, Color? color = null)
         {
             var cellName = string.Concat(GetColumnName(column), row);
             using (ExcelRange rng1 = wsSheet.Cells[cellName])
+            {
+                if (color.HasValue)
+                {
+                    rng1.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    rng1.Style.Fill.BackgroundColor.SetColor(color.Value);
+                }
+                rng1.Value = value;
+            }
+        }
+        public static void AddExcelCellFormula(int column, int row, object formula, ExcelWorksheet wsSheet, Color? color = null)
+        {
+            var cellName = string.Concat(GetColumnName(column), row);
+            using (ExcelRange rng1 = wsSheet.Cells[cellName])
+            {
+                if (color.HasValue)
+                {
+                    rng1.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    rng1.Style.Fill.BackgroundColor.SetColor(color.Value);
+                }
+                rng1.Formula = $"={formula}";
+            }
+        }
+        public static void AddExcelCellValue(string cellAddress, object value, ExcelWorksheet wsSheet, Color? color = null)
+        {
+            using (ExcelRange rng1 = wsSheet.Cells[cellAddress])
             {
                 if (color.HasValue)
                 {
@@ -377,8 +446,118 @@ namespace ExcelClient
                 int.TryParse(row, out rowNumber);
 
                 _startRow = rowNumber;
-                _startColumn = ExcelServices.GetColumnIndex(column);
+                _startColumn = GetColumnIndex(column);
             }
+        }
+        public static Dictionary<string, int> GetRowAndColumIndex(string address)
+        {
+
+            if (!string.IsNullOrEmpty(address))
+            {
+
+                var addressAndWorkSheet = address.Split("!");
+
+                var cellAddress = addressAndWorkSheet.Length > 1 ? addressAndWorkSheet[1] : addressAndWorkSheet[0];
+
+
+                Dictionary<string, int> dictionay = new Dictionary<string, int>();
+
+                var column = string.Empty;
+                var row = string.Empty;
+
+                foreach (char c in cellAddress)
+                {
+                    if (char.IsLetter(c))
+                        column += c;
+                    if (char.IsNumber(c))
+                        row += c;
+                }
+                int rowNumber;
+                int.TryParse(row, out rowNumber);
+
+                dictionay.Add("row", rowNumber);
+                dictionay.Add("column", ExcelServices.GetColumnIndex(column));
+                if (addressAndWorkSheet.Length > 1)
+                {
+                    dictionay.Add("WorkSheet", 0);
+                }
+                return dictionay;
+            }
+            return null;
+        }
+
+        public static Dictionary<string, string> GetColumnsNameAdress(IEnumerable<string> categories, ExcelWorksheet workSheet, string tableName, int row = 0)
+        {
+            var dictionary = new Dictionary<string, string>();
+
+
+
+            var addressDictionary = GetTableStartAdress(workSheet, tableName);
+
+            if (addressDictionary.Any())
+            {
+                foreach (var item in categories)
+                {
+                    int idx = GetIndexFromColumnName(workSheet, addressDictionary["row"], item);
+
+                    if (idx > 0)
+                    {
+                        dictionary.Add(item, $"'{workSheet.Name}'!{GetColumnName(idx)}{addressDictionary["row"]}");
+                    }
+                }
+            }
+            return dictionary;
+        }
+        public static string GetColumnNameAdress(string columnName, ExcelWorksheet workSheet, string tableName, int row = 0)
+        {
+            if (!string.IsNullOrEmpty(tableName) && row == 0)
+            {
+                var addressDictionary = GetTableStartAdress(workSheet, tableName);
+                if (addressDictionary.Any())
+                {
+                    row = addressDictionary["row"];
+                }
+            }
+
+            if (row > 0)
+            {
+                int idx = GetIndexFromColumnName(workSheet, row, columnName);
+
+                if (idx > 0)
+                {
+                    return $"'{workSheet.Name}'!{GetColumnName(idx)}{row}";
+                }
+            }
+            return null;
+        }
+
+        private static Dictionary<string, int> GetTableStartAdress(ExcelWorksheet workSheet, string tableName)
+        {
+            var addressDictionary = new Dictionary<string, int>();
+            var exTable = workSheet.Tables[tableName];
+            if (exTable != null)
+            {
+                var tableStartAdress = exTable.Address.Start.Address;
+                addressDictionary = GetRowAndColumIndex(tableStartAdress);
+            }
+            return addressDictionary;
+        }
+
+        public static int GetIndexFromColumnName(ExcelWorksheet workSheet, int row, string columnName)
+        {
+            if (!string.IsNullOrEmpty(columnName) && row > 0 && workSheet != null)
+            {
+                var valueExist = workSheet.Cells[$"{row}:{row}"].Any(c => c.Value?.ToString().ToLower() == columnName.ToLower());
+                if (valueExist)
+                {
+                    return workSheet
+                            .Cells[$"{row}:{row}"]
+                            .First(c => c.Value?.ToString().ToLower() == columnName.ToLower())
+                            .Start
+                            .Column;
+                }
+            }
+            return 0;
         }
 
 
