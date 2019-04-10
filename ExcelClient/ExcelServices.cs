@@ -169,7 +169,7 @@ namespace ExcelClient
             for (int year = minYear; year <= maxYear; year++)
             {
                 //give table Name
-             var   tableName = sheetTableName ?? string.Concat("Table-", year);
+                var tableName = sheetTableName ?? string.Concat("Table-", year);
 
                 // add Headers to table
                 CreateExcelTableHeader(wsSheet, tableName, newExcelColumn, startRow, endRow, _startColumn, endColum, true);
@@ -281,7 +281,7 @@ namespace ExcelClient
             wsSheet.Cells[wsSheet.Dimension.Address].AutoFitColumns();
         }
 
-        public static void UpdateYearTableValues(Dictionary<string, string> categoriesAddressdictionary, int year, 
+        public static void UpdateYearTableValues(Dictionary<string, string> categoriesAddressdictionary, int year,
             ExcelWorksheet workSheet, string tableName, string columnName, string dictionaryKey)
         {
             //TODO check if dictionary have key and if Table have column name
@@ -378,18 +378,20 @@ namespace ExcelClient
                 rng1.Value = value;
             }
         }
-        public static void AddExcelCellFormula(int column, int row, object formula, ExcelWorksheet wsSheet, Color? color = null)
+        public static void AddExcelCellFormula(int column, int row, string formula, ExcelWorksheet wsSheet, Color? color = null)
         {
-            var cellName = string.Concat(GetColumnName(column), row);
-            using (ExcelRange rng1 = wsSheet.Cells[cellName])
-            {
-                if (color.HasValue)
-                {
-                    rng1.Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    rng1.Style.Fill.BackgroundColor.SetColor(color.Value);
-                }
-                rng1.Formula = $"={formula}";
-            }
+            //var cellName = string.Concat(GetColumnName(column), row);
+            wsSheet.Cells[row, column].Formula = formula;
+
+            //using (ExcelRange rng1 = wsSheet.Cells[cellName])
+            //{
+            //    if (color.HasValue)
+            //    {
+            //        rng1.Style.Fill.PatternType = ExcelFillStyle.Solid;
+            //        rng1.Style.Fill.BackgroundColor.SetColor(color.Value);
+            //    }
+            //    rng1.Formula = formula.ToString();
+            //}
         }
         public static void AddExcelCellValue(string cellAddress, object value, ExcelWorksheet wsSheet, Color? color = null)
         {
@@ -406,10 +408,14 @@ namespace ExcelClient
 
         public static int GetColumnIndex(string columnName)
         {
-            const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            var index = letters.ToLower().IndexOf(columnName.ToLower());
+            var index = 0;
+            for (int i = 0; i < columnName.Length; i++)
+            {
+                index *= 26;
+                index += (columnName[i] - 'A' + 1);
+            }
 
-            return index + 1;
+            return index;
         }
 
         public static string GetColumnName(int index)
