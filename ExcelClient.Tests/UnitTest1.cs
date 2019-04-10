@@ -219,7 +219,7 @@ namespace ExcelClient.Tests
             {
                 categoryListTemp.Add(item.ToString());
             }
-           
+
             IEnumerable<string> categoryList = categoryListTemp;
 
 
@@ -233,21 +233,34 @@ namespace ExcelClient.Tests
 
                 //workSheet.Tables.Delete("YearExpenses");
 
+                // add all year categoiers 
                 ExcelServices.CreateYearExpensesTable(movementsViewModels, categoryList, year, ExpensesWSheet, "YearExpenses", "B38");
-                var excelcolumn = categoryList.ToList();
-                excelcolumn.Add("Sub Total");
-                excelcolumn.Add("Total");
-                IEnumerable<string> categoryListWithTotals = excelcolumn;
+
+                // update Year table
+
+                //Get Adress to budget table
+                var categoryListWithTotals = Helpers.AddItemsToIenumeration(categoryList, new List<string>() { "Sub Total", "Total" });
                 var CategoriesAddressWithTotals = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "Year_budget");
+
+                //Get address to expenses table
                 var CategoriesAddress = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "YearExpenses");
 
+                //Update year excel table
                 var yearWSheet = excelPkg.Workbook.Worksheets["Year summary"];
 
                 ExcelServices.UpdateYearTableValues(CategoriesAddressWithTotals, year, yearWSheet, "tblOperatingExpenses", "BUDGET", "Total");
                 ExcelServices.UpdateYearTableValues(CategoriesAddress, year, yearWSheet, "tblOperatingExpenses", "ACTUAL", "Total");
 
+                // get address to Month budget table
+                var categoriesWithoutIncome = Helpers.DeleteItemsfromIenumeration(categoryList, new List<string>() { "Åse", "Matias" });
+                var monthBudgetCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, ExpensesWSheet, "Year_budget");
+                var monthExpensesCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, ExpensesWSheet, "YearExpenses");
 
+                //update month Table with the categories summary
                 var monthWSheet = excelPkg.Workbook.Worksheets["Monthly summary"];
+
+                ExcelServices.UpdateClassesTableValues(monthBudgetCategoriesAddress, monthExpensesCategoriesAddress, year, monthWSheet, "tblOperatingExpenses7");
+
 
 
 

@@ -305,6 +305,54 @@ namespace ExcelClient
 
             }
         }
+        public static void UpdateClassesTableValues(Dictionary<string, string> BudgetCategoriesAddressdictionary, Dictionary<string, string> ExpenseCategoriesAddressdictionary, int year,
+            ExcelWorksheet workSheet, string tableName)
+        {
+            //TODO check if dictionary have key and if Table have column name
+
+            var addressDictionary = GetTableStartAdress(workSheet, tableName);
+
+            //TODO check cell Value
+            var date = (double)workSheet.Cells["G1"].Value;
+            var monthToFilter= DateTime.FromOADate(date).Month;
+
+            // Get cell address
+            var OperatingAdress = GetColumnNameAdress("OPERATING", workSheet, tableName);
+            var BudgetAdress = GetColumnNameAdress("BUDGET", workSheet, tableName);
+            var ActualAdress = GetColumnNameAdress("ACTUAL", workSheet, tableName);
+
+            //Get Row and Colum Index
+            var OperatingIndex = GetRowAndColumIndex(OperatingAdress);
+            var BudgetIndex = GetRowAndColumIndex(BudgetAdress);
+            var ActualIndex = GetRowAndColumIndex(ActualAdress);
+            int budgetCategories = BudgetCategoriesAddressdictionary.Count();
+            int expenseCategories = ExpenseCategoriesAddressdictionary.Count();
+
+            List<string> categories = budgetCategories > expenseCategories ? new List<string>(ExpenseCategoriesAddressdictionary.Keys) : new List<string>(BudgetCategoriesAddressdictionary.Keys);
+
+            if (addressDictionary.Any())
+            {
+                var i = 1;
+                foreach (var category in categories)
+                {
+                    //TODO Update formula =HLOOKUP([@OPERATING];'Expenses details'!$E$22:$AC$34;MONTH($G$1)+1;FALSE)
+
+                    string newBudgetCellAdress = AddRowAndColumnToCellAddress(BudgetCategoriesAddressdictionary[category], monthToFilter, 0);
+                    string budgetCellAdress = BudgetCategoriesAddressdictionary[category];
+                    string newActualCellAdress = AddRowAndColumnToCellAddress(ExpenseCategoriesAddressdictionary[category], monthToFilter, 0);
+                    string actualCellAdress = ExpenseCategoriesAddressdictionary[category];
+
+                    string newBudgetCell = $"OFFSET({budgetCellAdress},MONTH(G1),0)";
+                    string newActualCell = $"OFFSET({actualCellAdress},MONTH(G1),0)";
+
+                    AddExcelCellValue(OperatingIndex["column"], OperatingIndex["row"] + i, category, workSheet);
+
+                    AddExcelCellFormula(BudgetIndex["column"], BudgetIndex["row"] + i, newBudgetCell, workSheet);
+                    AddExcelCellFormula(ActualIndex["column"], ActualIndex["row"] + i, newActualCell, workSheet);
+                    i++;
+                }
+            }
+        }
 
         private static string AddRowAndColumnToCellAddress(string address, int row, int column)
         {
