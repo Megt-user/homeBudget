@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Transactions.Models;
 
@@ -24,5 +26,16 @@ namespace Transactions.Services
             return accountMovement;
         }
 
-    }   
+        public static JsonSerializerSettings GetJsonSerializerSettings()
+        {
+            return new JsonSerializerSettings
+            {
+                Converters = new List<JsonConverter> { new JsonDateFixingConverter() },
+                DateParseHandling = DateParseHandling.None,
+                NullValueHandling = NullValueHandling.Ignore,
+                MissingMemberHandling = MissingMemberHandling.Ignore
+            };
+        }
+
+    }
 }
