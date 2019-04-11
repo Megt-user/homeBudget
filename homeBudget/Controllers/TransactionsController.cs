@@ -38,7 +38,7 @@ namespace homeBudget.Controllers
             using (var stream = new FileStream(filePathTemp, FileMode.Create))
             {
                 await transacation.CopyToAsync(stream);
-                transactionsWorkSheet = ExcelServices.GetExcelWorksheet(stream, "Felles");
+                transactionsWorkSheet = ExcelServices.GetExcelWorksheet(stream);
             }
             using (var stream = new FileStream(filePath1, FileMode.Create))
             {
