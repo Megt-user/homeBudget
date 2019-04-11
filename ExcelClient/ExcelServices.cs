@@ -77,9 +77,17 @@ namespace ExcelClient
             return workSheet;
         }
 
-        public string GetJson(ExcelWorksheet ws)
+        public static string GetJsonFromTable(ExcelWorksheet ws, string tableName=null)
         {
-            var table = ws.Tables.FirstOrDefault();
+            ExcelTable table;
+            if (string.IsNullOrEmpty(tableName))
+            {
+                table = ws.Tables.FirstOrDefault(); 
+            }else
+            {
+                table = ws.Tables[tableName];
+            }
+
             string json = string.Empty;
             if (table != null)
             {
@@ -337,13 +345,11 @@ namespace ExcelClient
                 {
                     //TODO Update formula =HLOOKUP([@OPERATING];'Expenses details'!$E$22:$AC$34;MONTH($G$1)+1;FALSE)
 
-                    string newBudgetCellAdress = AddRowAndColumnToCellAddress(BudgetCategoriesAddressdictionary[category], monthToFilter, 0);
                     string budgetCellAdress = BudgetCategoriesAddressdictionary[category];
-                    string newActualCellAdress = AddRowAndColumnToCellAddress(ExpenseCategoriesAddressdictionary[category], monthToFilter, 0);
                     string actualCellAdress = ExpenseCategoriesAddressdictionary[category];
 
-                    string newBudgetCell = $"OFFSET({budgetCellAdress},MONTH(G1),0)";
-                    string newActualCell = $"OFFSET({actualCellAdress},MONTH(G1),0)";
+                    string newBudgetCell = $"OFFSET({budgetCellAdress},MONTH($G$1),0)";
+                    string newActualCell = $"OFFSET({actualCellAdress},MONTH($G$1),0)";
 
                     AddExcelCellValue(OperatingIndex["column"], OperatingIndex["row"] + i, category, workSheet);
 

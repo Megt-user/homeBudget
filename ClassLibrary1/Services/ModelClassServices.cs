@@ -261,7 +261,12 @@ namespace Transactions.Services
 
             return null;
         }
-
+        public static List<string> GetListOfCategories(List<MovementsViewModel> momvents)
+        {
+            var list = momvents.Where(m=>m.SupPorject!= "Mismatch"&& !string.IsNullOrEmpty(m.Category))
+                .Select(m => m.Category).Distinct().ToList();
+            return list;
+        }
 
     }
 }

@@ -12,6 +12,7 @@
     <None Remove="TestData\Budget Cashflow.xlsx" />
     <None Remove="TestData\Categories.xlsx" />
     <None Remove="TestData\CategoriesArray.json" />
+    <None Remove="TestData\Movements.xlsx" />
     <None Remove="TestData\SubCategories.json" />
     <None Remove="TestData\Transactions.xlsx" />
     <None Remove="TestData\TransactionViewModelArray.json" />
@@ -26,6 +27,7 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="TestData\CategoriesArray.json" />
+    <EmbeddedResource Include="TestData\Movements.xlsx" />
     <EmbeddedResource Include="TestData\SubCategories.json" />
     <EmbeddedResource Include="TestData\Transactions.xlsx">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

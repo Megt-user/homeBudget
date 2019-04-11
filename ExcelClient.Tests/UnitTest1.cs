@@ -12,6 +12,8 @@ using System.Text;
 using Transactions.Models;
 using Transactions.Services;
 using OfficeOpenXml.Table;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace ExcelClient.Tests
 {
@@ -36,8 +38,8 @@ namespace ExcelClient.Tests
             //ExcelPackage ep = new ExcelPackage(new FileInfo(resourcePath));
             ExcelWorksheet workSheet = ep.Workbook.Worksheets.FirstOrDefault();
             ExcelWorksheet workSheet1 = ep1.Workbook.Worksheets.FirstOrDefault();
-            var json = new ExcelServices().GetJson(workSheet);
-            var json1 = new ExcelServices().GetJson(workSheet1);
+            var json = ExcelServices.GetJsonFromTable(workSheet);
+            var json1 = ExcelServices.GetJsonFromTable(workSheet1);
             var jarray = JArray.Parse(json1);
             List<SubCategory> subcategories = new List<SubCategory>();
             foreach (var subCategory in jarray)
@@ -63,7 +65,7 @@ namespace ExcelClient.Tests
             ExcelPackage ep = new ExcelPackage(resourceAsStream);
 
             ExcelWorksheet workSheet = ep.Workbook.Worksheets["Felles"];
-            var json = new ExcelServices().GetJson(workSheet);
+            var json = ExcelServices.GetJsonFromTable(workSheet);
             var jarray = JArray.Parse(json);
             List<AccountMovement> acountsMovments = new List<AccountMovement>();
             foreach (var movment in jarray)
@@ -108,8 +110,8 @@ namespace ExcelClient.Tests
             ExcelWorksheet workSheet = ExcelServices.GetExcelWorksheet(AccountMovmentStream, "Felles");
             ExcelWorksheet workSheet2 = ExcelServices.GetExcelWorksheet(SubCategoriesStream);
 
-            var subCategoriesjArray = JArray.Parse(new ExcelServices().GetJson(workSheet2));
-            var accountMovmentjArray = JArray.Parse(new ExcelServices().GetJson(workSheet));
+            var subCategoriesjArray = JArray.Parse(ExcelServices.GetJsonFromTable(workSheet2));
+            var accountMovmentjArray = JArray.Parse(ExcelServices.GetJsonFromTable(workSheet));
             List<SubCategory> subCategories = ModelClassServices.GetSubCategoriesFromJarray(subCategoriesjArray);
             List<AccountMovement> accountMovements = ModelClassServices.GetAccountMovmentsFromJarray(accountMovmentjArray);
 
@@ -156,8 +158,8 @@ namespace ExcelClient.Tests
                 workSheet2 = ExcelServices.GetExcelWorksheet(SubCategoriesStream);
             }
 
-            var subCategoriesjArray = JArray.Parse(new ExcelServices().GetJson(workSheet2));
-            var accountMovmentjArray = JArray.Parse(new ExcelServices().GetJson(workSheet));
+            var subCategoriesjArray = JArray.Parse(ExcelServices.GetJsonFromTable(workSheet2));
+            var accountMovmentjArray = JArray.Parse(ExcelServices.GetJsonFromTable(workSheet));
             List<SubCategory> categorisModel = ModelClassServices.GetSubCategoriesFromJarray(subCategoriesjArray);
             IEnumerable<string> categoryList = categorisModel.Select(cat => cat.Category).Distinct();
             List<AccountMovement> accountMovements = ModelClassServices.GetAccountMovmentsFromJarray(accountMovmentjArray);
@@ -278,9 +280,73 @@ namespace ExcelClient.Tests
             File.Exists(filePath).Should().BeTrue();
         }
 
+        [Fact]
+        public void CreteCashFlowFromMovements()
+        {
+            var MovementsExcelPkg = new ExcelPackage(GetAssemblyFile("Movements.xlsx"));
+            var WoorSheet = MovementsExcelPkg.Workbook.Worksheets.FirstOrDefault();
+            var jsonFromTable = ExcelServices.GetJsonFromTable(WoorSheet);
+            MovementsExcelPkg.Dispose();
 
+            List<MovementsViewModel> movementsViewModels = JsonConvert.DeserializeObject<List<MovementsViewModel>>(jsonFromTable, JsonServices.GetJsonSerializerSettings());
 
-        private static Stream GetAssemblyFile(string fileName)
+            var categoryList = ModelClassServices.GetListOfCategories(movementsViewModels);
+            
+            //var movements = JsonConvert.DeserializeObject<List<MovementsViewModel>>(jsonFromTable, dateTimeConverter);
+            var excelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow.xlsx"));
+            ExcelTable yearBudget;
+            try
+            {
+                var ExpensesWSheet = excelPkg.Workbook.Worksheets["Expenses details"];
+
+                var year = 2018;
+
+                //workSheet.Tables.Delete("YearExpenses");
+
+                // add all year categoiers 
+                ExcelServices.CreateYearExpensesTable(movementsViewModels, categoryList, year, ExpensesWSheet, "YearExpenses", "B38");
+
+                // update Year table
+
+                //Get Adress to budget table
+                var categoryListWithTotals = Helpers.AddItemsToIenumeration(categoryList, new List<string>() { "Sub Total", "Total" });
+                var CategoriesAddressWithTotals = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "Year_budget");
+
+                //Get address to expenses table
+                var CategoriesAddress = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "YearExpenses");
+
+                //Update year excel table
+                var yearWSheet = excelPkg.Workbook.Worksheets["Year summary"];
+
+                ExcelServices.UpdateYearTableValues(CategoriesAddressWithTotals, year, yearWSheet, "tblOperatingExpenses", "BUDGET", "Total");
+                ExcelServices.UpdateYearTableValues(CategoriesAddress, year, yearWSheet, "tblOperatingExpenses", "ACTUAL", "Total");
+
+                // get address to Month budget table
+                var categoriesWithoutIncome = Helpers.DeleteItemsfromIenumeration(categoryList, new List<string>() { "Åse", "Matias" });
+                var monthBudgetCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, ExpensesWSheet, "Year_budget");
+                var monthExpensesCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, ExpensesWSheet, "YearExpenses");
+
+                //update month Table with the categories summary
+                var monthWSheet = excelPkg.Workbook.Worksheets["Monthly summary"];
+
+                ExcelServices.UpdateClassesTableValues(monthBudgetCategoriesAddress, monthExpensesCategoriesAddress, year, monthWSheet, "tblOperatingExpenses7");
+
+            }
+            catch (Exception e)
+            {
+                var noko = e.Message;
+            }
+            var filename = "Budget Cashflow Temp 02";
+            var path = string.Concat(@"h:\temp\");
+            Directory.CreateDirectory(path);
+            var filePath = Path.Combine(path, string.Concat(filename, ".xlsx"));
+            excelPkg?.SaveAs(new FileInfo(filePath));
+            excelPkg.Dispose();
+
+            File.Exists(filePath).Should().BeTrue();
+        }
+
+            private static Stream GetAssemblyFile(string fileName)
         {
             var resourceFileNema = fileName;
             var resourcePath = $"ExcelClient.Tests.TestData.{resourceFileNema}";

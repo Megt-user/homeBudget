@@ -46,8 +46,8 @@ namespace homeBudget.Controllers
                 categoriesWorkSheet = ExcelServices.GetExcelWorksheet(stream);
             }
 
-            var subCategoriesjArray = JArray.Parse(new ExcelServices().GetJson(categoriesWorkSheet));
-            var accountMovmentjArray = JArray.Parse(new ExcelServices().GetJson(transactionsWorkSheet));
+            var subCategoriesjArray = JArray.Parse(ExcelServices.GetJsonFromTable(categoriesWorkSheet));
+            var accountMovmentjArray = JArray.Parse(ExcelServices.GetJsonFromTable(transactionsWorkSheet));
 
             List<AccountMovement> accountMovements = ModelClassServices.GetAccountMovmentsFromJarray(accountMovmentjArray);
             List<SubCategory> categorisModel = ModelClassServices.GetSubCategoriesFromJarray(subCategoriesjArray);
