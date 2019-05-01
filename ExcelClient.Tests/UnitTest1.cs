@@ -14,6 +14,7 @@ using Transactions.Services;
 using OfficeOpenXml.Table;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using ExcelClient.Tests.Builder;
 
 namespace ExcelClient.Tests
 {
@@ -85,13 +86,11 @@ namespace ExcelClient.Tests
             Stream resourceAsStream = assembly.GetManifestResourceStream(resourcePath);
 
             string json;
-            JObject jObject;
             JArray jArray;
             using (StreamReader r = new StreamReader(resourceAsStream))
             {
                 json = r.ReadToEnd();
                 jArray = JArray.Parse(json);
-                //jObject = JObject.Parse(json);
             }
 
             foreach (var item in jArray)
@@ -115,7 +114,7 @@ namespace ExcelClient.Tests
             List<SubCategory> subCategories = ModelClassServices.GetSubCategoriesFromJarray(subCategoriesjArray);
             List<AccountMovement> accountMovements = ModelClassServices.GetAccountMovmentsFromJarray(accountMovmentjArray);
 
-            var modementsViewModels = ModelClassServices.getListOfModementsViewModel(accountMovements, subCategories, "Felles");
+            var modementsViewModels = ModelClassServices.CreateMovementsViewModels(accountMovements, subCategories, "Felles");
 
             var excelPkg = new ExcelPackage();
             try
@@ -164,7 +163,7 @@ namespace ExcelClient.Tests
             IEnumerable<string> categoryList = categorisModel.Select(cat => cat.Category).Distinct();
             List<AccountMovement> accountMovements = ModelClassServices.GetAccountMovmentsFromJarray(accountMovmentjArray);
 
-            var modementsViewModels = ModelClassServices.getListOfModementsViewModel(accountMovements, categorisModel, "Felles");
+            var modementsViewModels = ModelClassServices.CreateMovementsViewModels(accountMovements, categorisModel, "Felles");
 
             var excelPkg = new ExcelPackage();
             try
@@ -179,7 +178,7 @@ namespace ExcelClient.Tests
                 //ExcelServices.AddTableHeadings(wsSheet, new[] { "col1", "col2", "col3" }, subCategoriesjArray.Count+ accountMovmentjArray.Count);
 
                 //Add transactions to excel Sheet
-                ExcelServices.CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, categoryList);
+                ExcelServices.CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, wsSheet, categoryList,0,null,true);
                 //ExcelServices.CreateExcelTableFromMovementsViewModel(modementsViewModels, wsSheet, "TableName", categoryList);
 
             }
@@ -226,7 +225,6 @@ namespace ExcelClient.Tests
 
 
             var excelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow.xlsx"));
-            ExcelTable yearBudget;
             try
             {
                 var ExpensesWSheet = excelPkg.Workbook.Worksheets["Expenses details"];
@@ -291,10 +289,9 @@ namespace ExcelClient.Tests
             List<MovementsViewModel> movementsViewModels = JsonConvert.DeserializeObject<List<MovementsViewModel>>(jsonFromTable, JsonServices.GetJsonSerializerSettings());
 
             var categoryList = ModelClassServices.GetListOfCategories(movementsViewModels);
-            
+
             //var movements = JsonConvert.DeserializeObject<List<MovementsViewModel>>(jsonFromTable, dateTimeConverter);
             var excelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow.xlsx"));
-            ExcelTable yearBudget;
             try
             {
                 var ExpensesWSheet = excelPkg.Workbook.Worksheets["Expenses details"];
@@ -303,8 +300,11 @@ namespace ExcelClient.Tests
 
                 //workSheet.Tables.Delete("YearExpenses");
 
-                // add all year categoiers 
+                // add year expenses categoiers 
                 ExcelServices.CreateYearExpensesTable(movementsViewModels, categoryList, year, ExpensesWSheet, "YearExpenses", "B38");
+
+                // add year incoms categoiers 
+                ExcelServices.CreateYearIncomsTable(movementsViewModels, categoryList, year, ExpensesWSheet, "YearIncoms", "B54");
 
                 // update Year table
 
@@ -336,7 +336,7 @@ namespace ExcelClient.Tests
             {
                 var noko = e.Message;
             }
-            var filename = "Budget Cashflow Temp 02";
+            var filename = "Budget Cashflow Temp";
             var path = string.Concat(@"h:\temp\");
             Directory.CreateDirectory(path);
             var filePath = Path.Combine(path, string.Concat(filename, ".xlsx"));
@@ -346,7 +346,46 @@ namespace ExcelClient.Tests
             File.Exists(filePath).Should().BeTrue();
         }
 
-            private static Stream GetAssemblyFile(string fileName)
+        [Fact]
+        public void GetSubCategoryTest()
+        {
+            JArray JsonmodementsViewModels;
+            JArray JsonCategoryList;
+            Encoding encoding = Encoding.GetEncoding(28591);
+
+            using (StreamReader stream = new StreamReader(GetAssemblyFile("TransactionViewModelArray.json"), encoding, true))
+            {
+                JsonmodementsViewModels = JArray.Parse(stream.ReadToEnd());
+            }
+
+            Stream SubCategoriesStream = GetAssemblyFile("Categories.xlsx");
+            Stream AccountMovmentStream = GetAssemblyFile("Transactions.xlsx");
+
+            ExcelWorksheet workSheet = ExcelServices.GetExcelWorksheet(AccountMovmentStream, "Felles");
+            ExcelWorksheet workSheet2 = ExcelServices.GetExcelWorksheet(SubCategoriesStream);
+
+            var subCategoriesjArray = JArray.Parse(ExcelServices.GetJsonFromTable(workSheet2));
+            var accountMovmentjArray = JArray.Parse(ExcelServices.GetJsonFromTable(workSheet));
+            List<SubCategory> subCategories = ModelClassServices.GetSubCategoriesFromJarray(subCategoriesjArray);
+
+            var Modelviews = new ModelViewBuilder().AddTextToMovemnt(new List<string> { "arg tur","arg tur", "argentina tur","tur argentina", "argentina tur" });
+
+            var movementsViewModels = new List<MovementsViewModel>();
+            foreach (var item in JsonmodementsViewModels)
+            {
+                movementsViewModels.Add(new ModelClassServices().JsonToMovementsViewModels(item));
+            }
+
+            List<MovementsViewModel> newList = new List<MovementsViewModel>();
+            foreach (var movment in Modelviews)
+            {
+                newList.Add(ModelClassServices.UpdateMovementViewModelWithSubCategory(subCategories, movment));
+            }
+
+            newList.All(mv => !string.IsNullOrEmpty(mv.Category)).Should().BeTrue();
+        }
+
+        private static Stream GetAssemblyFile(string fileName)
         {
             var resourceFileNema = fileName;
             var resourcePath = $"ExcelClient.Tests.TestData.{resourceFileNema}";
@@ -357,7 +396,6 @@ namespace ExcelClient.Tests
 
         private static JArray GetJarrayfromJsonStream(Stream resourceAsStream)
         {
-            JObject jObject;
             string json;
             JArray jArray;
             List<SubCategory> subCategories = new List<SubCategory>();
@@ -365,7 +403,6 @@ namespace ExcelClient.Tests
             {
                 json = r.ReadToEnd();
                 jArray = JArray.Parse(json);
-                //jObject = JObject.Parse(json);
             }
             return jArray;
         }

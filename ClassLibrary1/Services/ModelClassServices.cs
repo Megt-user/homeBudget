@@ -114,36 +114,49 @@ namespace Transactions.Services
             return null;
         }
 
-        public static List<MovementsViewModel> getListOfModementsViewModel(List<AccountMovement> accountMovements, List<SubCategory> subCategories, string acountName)
+        public static List<MovementsViewModel> CreateMovementsViewModels(List<AccountMovement> accountMovements, List<SubCategory> subCategories, string acountName)
         {
             var moventsViewModel = new List<MovementsViewModel>();
             foreach (var movement in accountMovements)
             {
                 MovementsViewModel movementViewModel = new MovementsViewModel() { AcountName = acountName };
-                FillUpMovementViewModel(movement, ref movementViewModel);
+
+                // Add values to model if it find same property name
+                AddValueToMovementsModel(movement, ref movementViewModel);
+
                 movementViewModel = UpdateMovementViewModelWithSubCategory(subCategories, movementViewModel);
+
                 moventsViewModel.Add(movementViewModel);
             }
+            AddUnspecifiedTransaction(ref moventsViewModel);
             return moventsViewModel;
         }
 
-        private static MovementsViewModel UpdateMovementViewModelWithSubCategory(List<SubCategory> subCategories, MovementsViewModel movementModel)
+        private static void AddUnspecifiedTransaction(ref List<MovementsViewModel> moventsViewModel)
+        {
+            var listOfUnspecifiedTransaction = moventsViewModel.Where(mv => string.IsNullOrEmpty(mv.Category));
+            foreach (var movent in listOfUnspecifiedTransaction)
+            {
+                movent.Category = "Unspecified";
+            }
+        }
+
+        public static MovementsViewModel UpdateMovementViewModelWithSubCategory(List<SubCategory> subCategories, MovementsViewModel movementModel)
         {
             try
             {
 
                 if (!string.IsNullOrEmpty(movementModel.Text))
                 {
-                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) > 0);
+                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
 
                     if (subcategoriesMatch != null && subcategoriesMatch.Count() > 0)
                     {
                         if (subcategoriesMatch.Count() == 1)
-                            FillUpMovementViewModel(subcategoriesMatch.FirstOrDefault(), ref movementModel);
+                            AddValueToMovementsModel(subcategoriesMatch.FirstOrDefault(), ref movementModel);
                         else
-                            FillUpMovementViewModel(ChoseSubCategory(subcategoriesMatch), ref movementModel);
+                            AddValueToMovementsModel(AddSubcategoriesToMovement(subcategoriesMatch), ref movementModel);
                     }
-
                 }
             }
             catch
@@ -153,19 +166,72 @@ namespace Transactions.Services
             return movementModel;
         }
 
+        public static List<string> GetExtractionCategories(IEnumerable<string> categories, List<MovementsViewModel> movementsModel)
+        {
+            List<string> categoriesExtractions = new List<string>();
+            foreach (var category in categories)
+            {
+                if (movementsModel.Where(mv => mv.Category == category).Any(mv => mv.Amount < 0))
+                    categoriesExtractions.Add(category);
+            }
+            return categoriesExtractions;
+        }
+        public static List<string> GetIncomsCategories(IEnumerable<string> categories, List<MovementsViewModel> movementsModel)
+        {
+            List<string> categoriesExtractions = new List<string>();
+            foreach (var category in categories)
+            {
+                if (movementsModel.Where(mv => mv.Category == category).Any(mv => mv.Amount > 0))
+                    categoriesExtractions.Add(category);
+            }
+            return categoriesExtractions;
+        }
 
-
-        private static SubCategory ChoseSubCategory(IEnumerable<SubCategory> subcategoriesMatch)
+        private static SubCategory AddSubcategoriesToMovement(IEnumerable<SubCategory> subcategoriesMatch)
         {
             var subcategory = new SubCategory();
+            string SupPorject = null;
             var moreThanOneCategory = subcategoriesMatch.Select(sub => sub.Category).Distinct().Count() > 1;
             if (moreThanOneCategory)
             {
+
                 var subcategoryNames = subcategoriesMatch.Select(sub => sub.KeyWord).ToArray();
                 var subcategoryCategories = subcategoriesMatch.Select(sub => sub.Category).ToArray();
-                subcategory.KeyWord = string.Join(",", subcategoryNames);
-                subcategory.Category = string.Join(",", subcategoryCategories);
-                subcategory.SupPorject = "Mismatch";
+                if (subcategoryCategories.Contains("Mat"))
+                {
+                    subcategory.KeyWord = string.Join(",", subcategoryNames);
+                    subcategory.Category = "Mat";
+                    SupPorject = "Mismatch";
+                }
+                else if (subcategoryCategories.Contains("Vinmonopolet"))
+                {
+                    subcategory.KeyWord = string.Join(",", subcategoryNames);
+                    subcategory.Category = "Vinmonopolet";
+                    SupPorject = "Mismatch";
+                }
+                else if (subcategoryNames.Contains("ffo"))
+                {
+                    subcategory.KeyWord = string.Join(",", subcategoryNames);
+                    subcategory.Category = subcategoriesMatch.First(cat => cat.KeyWord == "ffo").Category;
+                    SupPorject = "Mismatch";
+                }
+                else if (ArrayCointains(subcategoryNames, "Matias"))
+                {
+                    subcategory.KeyWord = string.Join(",", subcategoryNames);
+                    subcategory.Category = subcategoriesMatch.First(cat => cat.KeyWord == "matias").Category;
+                }
+                else if (ArrayCointains(subcategoryNames, "Åse"))
+                {
+                    subcategory.KeyWord = string.Join(",", subcategoryNames);
+                    subcategory.Category = subcategoriesMatch.First(cat => cat.KeyWord == "Åse").Category;
+                }
+                else
+                {
+                    subcategory.KeyWord = string.Join(",", subcategoryNames);
+                    subcategory.Category = string.Join(",", subcategoryCategories);
+                    SupPorject = "Mismatch";
+                }
+                subcategory.SupPorject = SupPorject;
             }
             else
             {
@@ -174,7 +240,13 @@ namespace Transactions.Services
             return subcategory;
         }
 
-        private static void FillUpMovementViewModel(object movement, ref MovementsViewModel movementsViewModel)
+        private static bool ArrayCointains(string[] subcategoryNames, string name)
+        {
+            return subcategoryNames.Any(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(name, sub, CompareOptions.IgnoreCase) >= 0);
+        }
+
+        //Loop through all the properties
+        private static void AddValueToMovementsModel(object movement, ref MovementsViewModel movementsViewModel)
         {
             foreach (var property in movementsViewModel.GetType().GetProperties())
             {
@@ -225,45 +297,55 @@ namespace Transactions.Services
             return movements.Where(move => move.DateTime.Year == year && move.DateTime.Month == month);
         }
 
-        public static double? GetTotalforCategory(IEnumerable<MovementsViewModel> movements, string category, int? year = null, int? month = null)
+        public static double TotalforCategory(IEnumerable<MovementsViewModel> movements, string category, int? year = null, int? month = null, bool justExtrations = true)
         {
 
             var monthAndYaerMovements = movements.Where(move => move.DateTime.Year == year && move.DateTime.Month == month);
 
             if (monthAndYaerMovements.Any())
             {
-                return monthAndYaerMovements.Where(mov => mov.Category == category).Sum(cat => Math.Abs(cat.Amount));
+                var movementsByCategory = monthAndYaerMovements.Where(mov => mov.Category == category);
+                return SumByType(justExtrations, movementsByCategory);
             }
-
-            return null;
+            return 0;
         }
-        public static double? GetCategoriesMonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null)
+       
+        public static double CategoriesMonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
         {
 
             var monthAndYaerMovements = movements.Where(mov => !string.IsNullOrEmpty(mov.Category) && mov.DateTime.Year == year && mov.DateTime.Month == month);
-
-            if (monthAndYaerMovements.Any())
-            {
-                return monthAndYaerMovements.Sum(cat => Math.Abs(cat.Amount));
-            }
-
-            return null;
+            return SumByType(justExtrations, monthAndYaerMovements);
         }
-        public static double? GetMonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null)
+        public static double MonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
         {
-
             var monthAndYaerMovements = movements.Where(mov => mov.DateTime.Year == year && mov.DateTime.Month == month);
 
+            return SumByType(justExtrations, monthAndYaerMovements);
+        }
+
+        private static double SumByType(bool justExtrations, IEnumerable<MovementsViewModel> monthAndYaerMovements)
+        {
+            double sum = 0;
             if (monthAndYaerMovements.Any())
             {
-                return monthAndYaerMovements.Sum(cat => Math.Abs(cat.Amount));
+                if (justExtrations)
+                {
+                    var sum1 = monthAndYaerMovements.Where(mv => mv.Amount < 0).ToList();
+                    sum = monthAndYaerMovements.Where(mv => mv.Amount < 0).Sum(cat => Math.Abs(cat.Amount));
+                }
+                else
+                {
+                    var sum1 = monthAndYaerMovements.Where(mv => mv.Amount > 0).ToList();
+                    sum = monthAndYaerMovements.Where(mv => mv.Amount > 0).Sum(cat => Math.Abs(cat.Amount));
+                }
             }
 
-            return null;
+            return sum;
         }
+
         public static List<string> GetListOfCategories(List<MovementsViewModel> momvents)
         {
-            var list = momvents.Where(m=>m.SupPorject!= "Mismatch"&& !string.IsNullOrEmpty(m.Category))
+            var list = momvents.Where(m => m.SupPorject != "Mismatch" && !string.IsNullOrEmpty(m.Category))
                 .Select(m => m.Category).Distinct().ToList();
             return list;
         }
