@@ -330,3 +330,7 @@ ASALocalRun/
 .mfractor/
 
 ExcelClient\.Tests/TestData/
+
+homeBudget\.Tests/TestData/
+
+homeBudget/DataTemp/

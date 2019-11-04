@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace homeBudget.Models
+namespace Transactions.Models
 {
     public class SubCategory
     {

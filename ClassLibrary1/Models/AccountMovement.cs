@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace homeBudget.Models
+namespace Transactions.Models
 {
     public class AccountMovement
     {

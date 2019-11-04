@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using homeBudget.Models;
+using Transactions.Models;
 
-namespace homeBudget.Services
+namespace Transactions.Services
 {
     public class JsonServices
     {
