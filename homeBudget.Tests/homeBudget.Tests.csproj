@@ -14,24 +14,29 @@
     <None Remove="TestData\CategoriesArray.json" />
     <None Remove="TestData\Movements.xlsx" />
     <None Remove="TestData\SubCategories.json" />
+    <None Remove="TestData\TestData.xlsx" />
+    <None Remove="TestData\Transactions Update With Categories.xlsx" />
     <None Remove="TestData\Transactions.xlsx" />
+    <None Remove="TestData\TransactionsArray.json" />
     <None Remove="TestData\TransactionViewModelArray.json" />
-    <None Remove="TestData\~%24Transaksjonliste Å&amp;M - 2017 2.0.xlsx" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="TestData\AccountMovment.json" />
-    <EmbeddedResource Include="TestData\Budget Cashflow.xlsx" />
     <EmbeddedResource Include="TestData\Budget Cashflow Original.xlsx" />
+    <EmbeddedResource Include="TestData\Budget Cashflow.xlsx" />
     <EmbeddedResource Include="TestData\Categories.xlsx">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="TestData\CategoriesArray.json" />
     <EmbeddedResource Include="TestData\Movements.xlsx" />
     <EmbeddedResource Include="TestData\SubCategories.json" />
+    <EmbeddedResource Include="TestData\TestData.xlsx" />
+    <EmbeddedResource Include="TestData\Transactions Update With Categories.xlsx" />
     <EmbeddedResource Include="TestData\Transactions.xlsx">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="TestData\TransactionsArray.json" />
     <EmbeddedResource Include="TestData\TransactionViewModelArray.json" />
   </ItemGroup>
 
@@ -39,12 +44,8 @@
     <PackageReference Include="EPPlus" Version="4.5.2.1" />
     <PackageReference Include="FluentAssertions" Version="5.4.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="xunit" Version="2.4.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
   </ItemGroup>
 
   <ItemGroup>

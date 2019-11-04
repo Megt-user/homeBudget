@@ -18,7 +18,7 @@ using ExcelClient.Tests.Builder;
 
 namespace ExcelClient.Tests
 {
-    public class UnitTest1
+    public class ExcelClientsTests
     {
         [Fact]
         public void getSubCategoryModelFromExcel()
@@ -122,7 +122,9 @@ namespace ExcelClient.Tests
 
                 ExcelWorksheet wsSheet = excelPkg.Workbook.Worksheets.Add("fellesResum");
                 //Add Table Title
+                new ExcelServices();
                 ExcelServices.AddSheetHeading(wsSheet, "TableName");
+
                 // Add "input" and "output" headet to Excel table
                 //ExcelServices.AddTableHeadings(wsSheet, new[] { "col1", "col2", "col3" }, subCategoriesjArray.Count+ accountMovmentjArray.Count);
                 //Add DMN Table to excel Sheet
@@ -144,8 +146,7 @@ namespace ExcelClient.Tests
         [Fact]
         public void createMonthYearSummaryExcel()
         {
-            //Stream SubCategoriesStream = GetAssemblyFile("Categories.xlsx");
-            //Stream AccountMovmentStream = GetAssemblyFile("Transactions.xlsx");
+          
             ExcelWorksheet workSheet;
             ExcelWorksheet workSheet2;
             using (Stream AccountMovmentStream = GetAssemblyFile("Transactions.xlsx"))
@@ -296,7 +297,7 @@ namespace ExcelClient.Tests
             {
                 var ExpensesWSheet = excelPkg.Workbook.Worksheets["Expenses details"];
 
-                var year = 2018;
+                var year = 2019;
 
                 //workSheet.Tables.Delete("YearExpenses");
 
@@ -331,12 +332,17 @@ namespace ExcelClient.Tests
 
                 ExcelServices.UpdateClassesTableValues(monthBudgetCategoriesAddress, monthExpensesCategoriesAddress, year, monthWSheet, "tblOperatingExpenses7");
 
+                var categoriesAverageWSheet = excelPkg.Workbook.Worksheets.Add("Categories Average");
+                new ExcelServices();
+                ExcelServices.CreateCategoriesAverage(movementsViewModels, categoriesAverageWSheet, categoryList, year, 0, true);
+
+
             }
             catch (Exception e)
             {
                 var noko = e.Message;
             }
-            var filename = "Budget Cashflow Temp";
+            var filename = "Budget Cashflow With Average 2019";
             var path = string.Concat(@"h:\temp\");
             Directory.CreateDirectory(path);
             var filePath = Path.Combine(path, string.Concat(filename, ".xlsx"));
@@ -350,7 +356,6 @@ namespace ExcelClient.Tests
         public void GetSubCategoryTest()
         {
             JArray JsonmodementsViewModels;
-            JArray JsonCategoryList;
             Encoding encoding = Encoding.GetEncoding(28591);
 
             using (StreamReader stream = new StreamReader(GetAssemblyFile("TransactionViewModelArray.json"), encoding, true))
