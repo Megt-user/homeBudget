@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using homeBudget.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Transactions.Models;
 
 namespace homeBudget.Controllers
 {
@@ -25,12 +24,12 @@ namespace homeBudget.Controllers
         [HttpGet("{id}")]
         public IActionResult Get(int id, string query)
         {
-            return Ok(new AccountMovement { Id= id, AcountName = "value"+id});
+            return Ok(new Transaction { Id= id, AcountName = "value"+id});
         }
 
 
         [HttpPost]
-        public IActionResult Post([FromBody] AccountMovement value)
+        public IActionResult Post([FromBody] Transaction value)
         {
             if (!ModelState.IsValid)
             {

@@ -14,17 +14,17 @@ namespace ExcelClient
 {
     public class ExcelServices
     {
-        private static int _startRow ;
+        private static int _startRow;
         private static int _startColumn;
         private static string _heding;
         private static string _titlecell;
 
         public ExcelServices()
         {
-             _startRow = 3;
-             _startColumn = 1;
-             _heding = "B1";
-             _titlecell = "C1";
+            _startRow = 3;
+            _startColumn = 1;
+            _heding = "B1";
+            _titlecell = "C1";
         }
 
         public static void CreateSheetWithTransactionMovments(List<MovementsViewModel> modementsViewModels, ExcelPackage excelPkg, string sheetName, string sheetHeading, string tableName)
@@ -70,6 +70,13 @@ namespace ExcelClient
         {
 
             SetStartRowAndColum(tableStartAdress);
+            //Add transactions to excel Sheet
+            CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, workSheet, categoryList, year, tableName, false);
+        }
+        public static void CreateCategoriesAverageTable(List<MovementsViewModel> modementsViewModels, IEnumerable<string> categoryList, int year, int month,
+            ExcelWorksheet workSheet, string tableName)
+        {
+
             //Add transactions to excel Sheet
             CreateExcelMonthSummaryTableFromMovementsViewModel(modementsViewModels, workSheet, categoryList, year, tableName, false);
         }
@@ -147,6 +154,122 @@ namespace ExcelClient
             {
                 tableHeadingFormat(rng, "Input");
             }
+        }
+
+        public static void CreateCategoriesAverage(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, IEnumerable<string> categories,
+            int year = 0, int month1 = 0, bool justExtrations = true)
+        {
+            if (justExtrations)
+            {
+                categories = ModelClassServices.GetExtractionCategories(categories, movementsModel);
+            }
+            else
+            {
+                categories = ModelClassServices.GetIncomsCategories(categories, movementsModel);
+            }
+            categories = categories.OrderBy(c => c);
+            var columns = new[] { "Type" };
+            var newAverageColumn = new[] { $"Year({year})", "Day" };
+
+            var newExcelColumn = columns.Concat(categories);
+            // Calculate size of the table
+            var endRow = _startRow + newAverageColumn.Count();
+            var endColum = _startColumn + newExcelColumn.Count();
+
+            // Create Excel table Header
+            int startRow = _startRow;
+            int startColumn = _startColumn;
+
+            var row = _startRow;
+
+            var tableStartColumn = _startColumn;
+
+            // Set Excel table content
+
+            //give table Name
+            var tableName = "CategoriesAverage";
+            // Add table Headers
+            CreateExcelTableHeader(wsSheet, tableName, newExcelColumn, startRow, endRow, _startColumn, endColum, true);
+            row++;
+
+            foreach (var item in newAverageColumn)
+            {
+                foreach (var category in newExcelColumn)
+                {
+                    if (category == "Type")
+                    {
+                        AddExcelCellValue(row, tableStartColumn, item, wsSheet);
+                    }
+                    else
+                    {
+                        double categoryAverage = 0;
+                        if (item == $"Year({year})")
+                        {
+                            categoryAverage = ModelClassServices.AverageforCategory(movementsModel, category, year, null, justExtrations);
+                        }
+                        if (item == $"Day")
+                        {
+                            categoryAverage = ModelClassServices.AverageforCategory(movementsModel, category, null, null, justExtrations);
+                        }
+                        wsSheet.Cells[row, tableStartColumn].Style.Numberformat.Format = ExcelHelpers.SetFormatToCell("Amount");
+                        AddExcelCellValue(row, tableStartColumn, categoryAverage, wsSheet);
+                    }
+                    tableStartColumn++;
+                }
+                tableStartColumn = _startColumn;
+                row++;
+            }
+
+            row = row + 3;
+
+            // Calculate size of the table
+            endRow = row + 12;
+            endColum = _startColumn + newExcelColumn.Count();
+
+            // Create Excel table Header
+            startRow = row;
+            startColumn = _startColumn;
+
+
+            tableStartColumn = _startColumn;
+
+            // Set Excel table content
+
+            //give table Name
+            tableName = "CategoriesMonthAverage";
+            // Add table Headers
+            CreateExcelTableHeader(wsSheet, tableName, newExcelColumn, startRow, endRow, _startColumn, endColum, true);
+            row++;
+
+            tableStartColumn = _startColumn;
+
+            for (int month = 1; month <= 12; month++)
+            {
+                var monthName = string.Concat(DateTimeFormatInfo.CurrentInfo.GetMonthName(month));
+                AddExcelCellValue(row, tableStartColumn, monthName, wsSheet);
+
+                foreach (var category in newExcelColumn)
+                {
+                    double categoryAverage = 0;
+
+                    if (category == "Type")
+                    {
+                        tableStartColumn++;
+                        continue;
+                    }
+                    else
+                    {
+                        categoryAverage = ModelClassServices.AverageforCategory(movementsModel, category, null, month, justExtrations);
+
+                        wsSheet.Cells[row, tableStartColumn].Style.Numberformat.Format = ExcelHelpers.SetFormatToCell("Amount");
+                        AddExcelCellValue(row, tableStartColumn, categoryAverage, wsSheet);
+                        tableStartColumn++;
+                    }
+                }
+                tableStartColumn = _startColumn;
+                row++;
+            }
+
         }
         public static void CreateExcelMonthSummaryTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, IEnumerable<string> categories,
             int sheetYear = 0, string sheetTableName = null, bool justExtrations = true)
@@ -249,7 +372,7 @@ namespace ExcelClient
                 //Indirectly access ExcelTableCollection class
                 ExcelTable table = wsSheet.Tables.Add(rng, tableName);
 
-                var color = Color.FromArgb(250, 199, 111);
+                //var color = Color.FromArgb(250, 199, 111);
 
                 //Set Columns position & name
                 var i = 0;
@@ -260,7 +383,7 @@ namespace ExcelClient
                     //Add total cell to the end of the table
                     if (i != 0)
                         table.Columns[i].TotalsRowFormula = $"SUBTOTAL(101,[{property}])"; // 101 average, 103 Count, 109 sum
-                        
+
                     i++;
                 }
 
@@ -357,7 +480,7 @@ namespace ExcelClient
             //int budgetCategories = BudgetCategoriesAddressdictionary.Count();
             //int expenseCategories = ExpenseCategoriesAddressdictionary.Count();
 
-            var categories = BudgetCategoriesAddressdictionary.Where(ct => ExpenseCategoriesAddressdictionary.ContainsKey(ct.Key)).Select(ct=> ct.Key).ToList();
+            var categories = BudgetCategoriesAddressdictionary.Where(ct => ExpenseCategoriesAddressdictionary.ContainsKey(ct.Key)).Select(ct => ct.Key).ToList();
 
             //List<string> categories = budgetCategories > expenseCategories ? new List<string>(ExpenseCategoriesAddressdictionary.Keys) : new List<string>(BudgetCategoriesAddressdictionary.Keys);
 

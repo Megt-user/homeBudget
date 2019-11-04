@@ -292,15 +292,10 @@ namespace Transactions.Services
             }
         }
 
-        public static IEnumerable<MovementsViewModel> GetAllMonthAndYaerMovements(List<MovementsViewModel> movements, int year, int month)
-        {
-            return movements.Where(move => move.DateTime.Year == year && move.DateTime.Month == month);
-        }
-
         public static double TotalforCategory(IEnumerable<MovementsViewModel> movements, string category, int? year = null, int? month = null, bool justExtrations = true)
         {
 
-            var monthAndYaerMovements = movements.Where(move => move.DateTime.Year == year && move.DateTime.Month == month);
+            var monthAndYaerMovements = GetMovementByMonthYear(movements, year, month);
 
             if (monthAndYaerMovements.Any())
             {
@@ -309,7 +304,66 @@ namespace Transactions.Services
             }
             return 0;
         }
-       
+
+        public static double AverageforCategory(IEnumerable<MovementsViewModel> movements, string category, int? year = null, int? month = null, bool justExtrations = true)
+        {
+            var monthAndYaerMovements = GetMovementByMonthYear(movements, year, month);
+            double average = 0;
+            if (monthAndYaerMovements.Any())
+            {
+                //TODO get average for year / month for the category
+                var movementsByCategory = monthAndYaerMovements.Where(mov => mov.Category == category && mov.Amount != 0);
+                movementsByCategory = GetMovementsViewModelsByMovmentType(justExtrations, movementsByCategory);
+                if (month != null && year == null)
+                {
+                    var result1 = movementsByCategory.GroupBy(mv => mv.DateTime.Year).Select(mov => new { Year = mov.Key, sum = mov.Sum(p => p.Amount) });
+                    average = !result1.Any() ? 0 : result1.Average(r => r.sum);
+                }
+
+                if (year != null && month == null)
+                {
+                    var result1 = movementsByCategory.GroupBy(mv => mv.DateTime.Month).Select(mov => new { Month = mov.Key, sum = mov.Sum(p => p.Amount) });
+                    average = !result1.Any() ? 0 : result1.Average(r => r.sum);
+                }
+
+                if (year == null && month == null)
+                {
+                    var group = movementsByCategory.GroupBy(mv => mv.DateTime.Day);
+                    var count = group.Count();
+                    var sum = group.Select(mov => new { Day = mov.Key, sum = mov.Sum(p => p.Amount) });
+                    var result1 = movementsByCategory.GroupBy(mv => mv.DateTime.Day).Select(mov => new { Day = mov.Key, sum = mov.Sum(p => p.Amount) });
+                    average = !result1.Any() ? 0 : result1.Average(r => r.sum);
+
+                }
+
+                return Math.Abs(average);
+            }
+            return Math.Abs(average);
+        }
+
+        private static IEnumerable<MovementsViewModel> GetMovementsViewModelsByMovmentType(bool justExtrations, IEnumerable<MovementsViewModel> monthAndYaerMovements)
+        {
+            if (justExtrations)
+                return monthAndYaerMovements.Where(mv => mv.Amount < 0).ToList();
+            else
+                return monthAndYaerMovements.Where(mv => mv.Amount > 0).ToList();
+        }
+
+        private static IEnumerable<MovementsViewModel> GetMovementByMonthYear(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null)
+        {
+            IEnumerable<MovementsViewModel> movementsTemp = null;
+            if (year != null)
+                movementsTemp = movements.Where(move => move.DateTime.Year == year);
+            if (month != null)
+            {
+                if (movementsTemp != null)
+                    movementsTemp = movementsTemp.Where(move => move.DateTime.Month == month);
+                else
+                    movementsTemp = movements.Where(move => move.DateTime.Month == month);
+            }
+            return movementsTemp ?? movements;
+        }
+
         public static double CategoriesMonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
         {
 
@@ -322,6 +376,7 @@ namespace Transactions.Services
 
             return SumByType(justExtrations, monthAndYaerMovements);
         }
+
 
         private static double SumByType(bool justExtrations, IEnumerable<MovementsViewModel> monthAndYaerMovements)
         {

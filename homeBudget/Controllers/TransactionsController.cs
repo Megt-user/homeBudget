@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using ExcelClient;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
-using Transactions.Models;
-using Transactions.Services;
 using System.Linq;
 using System.Reflection;
+using homeBudget.Models;
+using homeBudget.Services;
+using Microsoft.AspNetCore.Hosting;
 using OfficeOpenXml.Table;
 using Newtonsoft.Json;
 
@@ -20,287 +20,255 @@ namespace homeBudget.Controllers
     [Route("api/[controller]")]
     public class TransactionsController : Controller
     {
+        private IHostingEnvironment _hostingEnvironment;
+
+        public TransactionsController(IHostingEnvironment environment)
+        {
+            _hostingEnvironment = environment;
+        }
 
         [HttpPost("UploadFiles")]
-        public async Task<IActionResult> Post(IFormFile transacation, IFormFile category, int year = 0)
+        public async Task<IActionResult> Post(IFormFile transactions, IFormFile categories, int year = 0)
         {
-
-            long categoryFileSize = category.Length;
 
             var filePathTemp = Path.GetTempFileName();
             var filePath1 = Path.GetTempFileName();
+            var responseDictionary = new Dictionary<string, string>();
 
-
-            if (!IsFileValid(transacation) || !IsFileValid(category))
+            if (!IsFileValid(transactions) || !IsFileValid(categories))
                 return BadRequest();
 
             ExcelWorksheet transactionsWorkSheet;
             ExcelWorksheet categoriesWorkSheet;
-            
-            //Start Columns positions
-            new ExcelServices();
 
             //Read Excel Files
-            using (var stream = new FileStream(filePathTemp, FileMode.Create))
+            try
             {
-                await transacation.CopyToAsync(stream);
-                transactionsWorkSheet = ExcelServices.GetExcelWorksheet(stream);
+                transactionsWorkSheet = await ExcelHelpers.GetExcelWorkSheet(transactions, filePathTemp);
+                categoriesWorkSheet = await ExcelHelpers.GetExcelWorkSheet(categories, filePath1);
             }
-            using (var stream = new FileStream(filePath1, FileMode.Create))
+            catch (Exception ex)
             {
-                await category.CopyToAsync(stream);
-                categoriesWorkSheet = ExcelServices.GetExcelWorksheet(stream);
+
+                return BadRequest("Can't read excel files");
             }
 
+
+            var transactionsTable = transactionsWorkSheet.Tables.FirstOrDefault();
+            var categoriestabTable = categoriesWorkSheet.Tables.FirstOrDefault();
             //Get excel data  in Json format easier to serialize to class
-            var subCategoriesjArray = JArray.Parse(ExcelServices.GetJsonFromTable(categoriesWorkSheet));
-            var accountMovmentjArray = JArray.Parse(ExcelServices.GetJsonFromTable(transactionsWorkSheet));
-            
+            var accountMovmentjArray = ExcelConverter.GetJsonFromTable(transactionsTable);
+            var subCategoriesjArray = ExcelConverter.GetJsonFromTable(categoriestabTable);
+
             // serialize Json to Class
-            List<AccountMovement> accountMovements = ModelClassServices.GetAccountMovmentsFromJarray(accountMovmentjArray);
-            List<SubCategory> categorisModel = ModelClassServices.GetSubCategoriesFromJarray(subCategoriesjArray);
+            List<Transaction> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(accountMovmentjArray);
+            List<SubCategory> categorisModel = ModelConverter.GetCategoriesFromJarray(subCategoriesjArray);
             IEnumerable<string> categoryList = categorisModel.Select(cat => cat.Category).Distinct();
 
             //TODO Get acount Name from Excel or Input variable
-            var modementsViewModels = ModelClassServices.CreateMovementsViewModels(accountMovements, categorisModel, "Felles");
+            var movementsViewModels = ModelConverter.CreateMovementsViewModels(accountMovements, categorisModel, "Felles");
 
-            var excelPkg = new ExcelPackage();
-            try
+            //Create excel Sheet with the transaction updated with the keewords, categories, and subproject (is exists)
+            var categoriesArray = categoryList as string[] ?? categoryList.ToArray();
+            using (var stream = new MemoryStream())
+            using (var transactionUpdatePackage = new ExcelPackage(stream))
             {
-                ExcelServices.CreateSheetWithTransactionMovments(modementsViewModels, excelPkg, "Transactions", "Transactions and Categories", "Transactions");
-            }
-            catch (Exception e)
-            {
-                return BadRequest("Creating transaction sheet. Error message : " + e.Message);
-            }
-            try
-            {
-                ExcelServices.CreateSheetWithMonthSummary(modementsViewModels, excelPkg, "MonthSummaries", categoryList);
-            }
-            catch (Exception e)
-            {
-                return BadRequest("Creating MonthSummary Sheet. Error message : " + e.Message);
-            }
+                try
+                {
+                    //Add Table Title
+                    var transactionSheet = transactionUpdatePackage.Workbook.Worksheets.Add("Transactions");
+                    ExcelServices.AddSheetHeading(transactionSheet, "Transactions and Categories");
 
-            // Create Cashflow
-            var cashflowExcelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow.xlsx"));
-            var ExpensesWSheet = cashflowExcelPkg.Workbook.Worksheets["Expenses details"];
+                    //Add transactions to excel Sheet
+                    var movementsViewExcelTable = ExcelServices.CreateExcelTableFromMovementsViewModel(movementsViewModels, transactionSheet, "Transactions");
 
-            if (year == 0)
-            {
-                year = DateTime.Today.Year;
-            }
+                }
+                catch (Exception e)
+                {
+                    return BadRequest("Error Creating transaction sheet. Error message : " + e.Message);
+                }
 
-            // add year categoiers Table
-            try
-            {
-                ExcelServices.CreateYearExpensesTable(modementsViewModels, categoryList, year, ExpensesWSheet, "YearExpenses", "B38");
+                // Add Categories Average to excel
+                try
+                {
+                    AddCategoriesAverage(year, transactionUpdatePackage, movementsViewModels, categoriesArray);
+                }
+                catch (Exception e)
+                {
 
-            }
-            catch (Exception e)
-            {
+                    return BadRequest(" Error Creating Average sheet. Error message : " + e.Message);
+                }
 
-                return BadRequest("Creating Year expensesTable Sheet. Error message : " + e.Message);
+                // add month summaries to excel
+                try
+                {
+                    var monthSummariesSheet = transactionUpdatePackage.Workbook.Worksheets.Add("MonthSummaries");
+                    ExcelServices.CreateExcelMonthSummaryTableFromMovementsViewModel(monthSummariesSheet, movementsViewModels, categoriesArray, 0, null, true);
+                }
+                catch (Exception e)
+                {
+                    return BadRequest("Creating MonthSummary Sheet. Error message : " + e.Message);
+                }
 
-            }
-            // add year incoms categoiers 
-            try
-            {
-                ExcelServices.CreateYearIncomsTable(modementsViewModels, categoryList, year, ExpensesWSheet, "YearIncoms", "B54");
+                try
+                {
+                    var filename = "Transactions Update With Categories";
 
-            }
-            catch (Exception e)
-            {
-                return BadRequest("Problem Creating Year IncomsTable Sheet. Error message : " + e.Message);
-            }
+                    string contentRootPath = _hostingEnvironment.ContentRootPath;
 
-            // update Year table
-
-            Dictionary<string, string> CategoriesAddressWithTotals = null;
-            Dictionary<string, string> CategoriesAddress = null;
-            IEnumerable<string> categoryListWithTotals = null;
-            //Add sub total and total to list to get them from budget table
-            try
-            {
-                categoryListWithTotals = Helpers.AddItemsToIenumeration(categoryList, new List<string>() { "Sub Total", "Total" });
-                CategoriesAddressWithTotals = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "Year_budget");
-                //Get address to expenses table
-                CategoriesAddress = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "YearExpenses");
-
-            }
-            catch (Exception e)
-            {
-
-                return BadRequest("Cant get Info from table from 'Expenses details' sheet. Error message : " + e.Message);
+                    var fullPath = Path.Combine(contentRootPath, "DataTemp", $"{filename}.xlsx");
+                    transactionUpdatePackage.SaveAs(new FileInfo(fullPath));
+                }
+                catch (Exception e)
+                {
+                    return BadRequest("Transactions Update With Categories Can't be saved :" + e.Message);
+                }
 
             }
 
-            //Update year excel table
-            try
-            {
-                var yearWSheet = cashflowExcelPkg.Workbook.Worksheets["Year summary"];
-
-                ExcelServices.UpdateYearTableValues(CategoriesAddressWithTotals, year, yearWSheet, "tblOperatingExpenses", "BUDGET", "Total");
-                ExcelServices.UpdateYearTableValues(CategoriesAddress, year, yearWSheet, "tblOperatingExpenses", "ACTUAL", "Total");
-
-            }
-            catch (Exception e)
+            //Next Excel File More details and cashflow + Chars
+            using (var cashflowExcelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow.xlsx")))
             {
 
-                return BadRequest("Cant tables in 'Year summary' sheet. Error message : " + e.Message);
 
+                try
+                {
+                    UpdateBudgetCashFlow(cashflowExcelPkg, movementsViewModels, categoriesArray.ToList(), year);
+                }
+                catch (Exception)
+                {
+                    return BadRequest("Cant creat Cashflow Excel File");
+                }
+                // Save Excel Package
+                try
+                {
+                    var filename = $"Budget Cashflow ({year})";
+
+                    string contentRootPath = _hostingEnvironment.ContentRootPath;
+
+                    var fullPath = Path.Combine(contentRootPath, "DataTemp", $"{filename}.xlsx");
+                    cashflowExcelPkg.SaveAs(new FileInfo(fullPath));
+                }
+                catch
+                {
+                    return BadRequest("Can't be saved");
+                }
             }
 
-
-            Dictionary<string, string> monthBudgetCategoriesAddress = null;
-            Dictionary<string, string> monthExpensesCategoriesAddress = null;
-            try
-            {
-                // get address to Month budget table
-                var categoriesWithoutIncome = Helpers.DeleteItemsfromIenumeration(categoryList, new List<string>() { "Åse", "Matias" });
-                monthBudgetCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, ExpensesWSheet, "Year_budget");
-                monthExpensesCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, ExpensesWSheet, "YearExpenses");
-
-            }
-            catch (Exception e)
-            {
-
-                return BadRequest("Cant get tables info from 'Expenses details' sheet to update Class table. Error message : " + e.Message);
-
-            }
-            //update month Table with the categories summary
-            try
-            {
-                var monthWSheet = cashflowExcelPkg.Workbook.Worksheets["Monthly summary"];
-                ExcelServices.UpdateClassesTableValues(monthBudgetCategoriesAddress, monthExpensesCategoriesAddress, year, monthWSheet, "tblOperatingExpenses7");
-
-            }
-            catch (Exception e)
-            {
-                return BadRequest("Cant update tblOperatingExpenses7 in 'Monthly summary' sheet. Error message : " + e.Message);
-            }
-
-            Dictionary<string, string> filesPath = new Dictionary<string, string>();
-            // Save Excel Package
-            try
-            {
-                var filename = "Transactions Update With Categories";
-                var path = Path.Combine(@"h:\", "Transactions");
-
-                Directory.CreateDirectory(path);
-                excelPkg.SaveAs(new FileInfo(Path.Combine(path, string.Concat(filename, ".xlsx"))));
-                filesPath.Add(filename, path);
-                filename = $"Budget Cashflow ({year})";
-                path = Path.Combine(@"h:\", "Transactions");
-                excelPkg.Dispose();
-
-                Directory.CreateDirectory(path);
-                cashflowExcelPkg.SaveAs(new FileInfo(Path.Combine(path, string.Concat(filename, ".xlsx"))));
-                filesPath.Add(filename, path);
-                cashflowExcelPkg.Dispose();
-            }
-            catch
-            {
-
-                return BadRequest("Can't be saved");
-            }
-
-            return Ok("Created in:" + filesPath);
+            return Ok(responseDictionary);
         }
 
         [HttpPost("UploadTransactions")]
-        public async Task<IActionResult> PostTransaction(IFormFile transacation, int year = 0)
+        public async Task<IActionResult> PostTransaction(IFormFile transactions, int year = 0)
         {
-
-
-            long categoryFileSize = transacation.Length;
-
             var filePathTemp = Path.GetTempFileName();
-            var filePath1 = Path.GetTempFileName();
 
-
-            if (!IsFileValid(transacation))
-                return BadRequest("Can't be saved");
-            ExcelWorksheet transactionsWorkSheet;
+            if (!IsFileValid(transactions))
+                return BadRequest("Can't read transactions excel file");
 
             using (var stream = new FileStream(filePathTemp, FileMode.Create))
             {
-                await transacation.CopyToAsync(stream);
-                transactionsWorkSheet = ExcelServices.GetExcelWorksheet(stream);
-            }
-            var WoorSheet = transactionsWorkSheet.Workbook.Worksheets.FirstOrDefault();
-            var jsonFromTable = ExcelServices.GetJsonFromTable(WoorSheet);
-            transactionsWorkSheet.Dispose();
-
-            List<MovementsViewModel> movementsViewModels = JsonConvert.DeserializeObject<List<MovementsViewModel>>(jsonFromTable, JsonServices.GetJsonSerializerSettings());
-
-            var categoryList = ModelClassServices.GetListOfCategories(movementsViewModels);
-
-            //var movements = JsonConvert.DeserializeObject<List<MovementsViewModel>>(jsonFromTable, dateTimeConverter);
-            var excelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow.xlsx"));
-            try
-            {
-                var ExpensesWSheet = excelPkg.Workbook.Worksheets["Expenses details"];
-
-                if (year == 0)
+                await transactions.CopyToAsync(stream);
+                List<MovementsViewModel> movementsViewModels = null;
+                List<string> categoryList;
+                using (var transacationAndCategories = new ExcelPackage(stream))
                 {
-                    year = DateTime.Today.Year;
+                    JArray jsonFromTable = null;
+                    var worksheet = transacationAndCategories.Workbook.Worksheets.FirstOrDefault();
+                    if (worksheet != null)
+                    {
+                        var excelTable = worksheet.Tables.FirstOrDefault();
+                        jsonFromTable = ExcelConverter.GetJsonFromTable(excelTable);
+                    }
+
+                    if (jsonFromTable != null)
+                    {
+                        movementsViewModels = jsonFromTable.ToObject<List<MovementsViewModel>>();
+                        //movementsViewModels = JsonConvert.DeserializeObject<List<MovementsViewModel>>(jsonFromTable?.ToString(), JsonServices.GetJsonSerializerSettings());
+                    }
+
+                    categoryList = ModelConverter.GetListOfCategories(movementsViewModels);
+
+
+                    // Add Categories Average to excel
+                    try
+                    {
+                        AddCategoriesAverage(year, transacationAndCategories, movementsViewModels, categoryList.ToArray());
+                    }
+                    catch (Exception e)
+                    {
+
+                        return BadRequest(" Error Creating Average sheet. Error message : " + e.Message);
+                    }
+
+                    // add month summaries to excel
+
+                    try
+                    {
+                        ExcelWorksheet monthSummariesSheet = transacationAndCategories.Workbook.Worksheets["MonthSummaries"];
+                        
+
+                        if (monthSummariesSheet != null)
+                        {
+                            transacationAndCategories.Workbook.Worksheets.Delete("MonthSummaries");
+                            monthSummariesSheet = transacationAndCategories.Workbook.Worksheets.Add("Month Summaries New");
+                        }
+                        else
+                        {
+                            monthSummariesSheet = transacationAndCategories.Workbook.Worksheets.Add("MonthSummaries");
+                        }
+
+                        ExcelServices.CreateExcelMonthSummaryTableFromMovementsViewModel(monthSummariesSheet, movementsViewModels, categoryList.ToArray(), 0, null, true);
+                    }
+                    catch (Exception e)
+                    {
+                        return BadRequest("Creating MonthSummary Sheet. Error message : " + e.Message);
+                    }
+
+                    try
+                    {
+                        var filename = "Transactions Update With Categories (1)";
+
+                        string contentRootPath = _hostingEnvironment.ContentRootPath;
+
+                        var fullPath = Path.Combine(contentRootPath, "DataTemp", $"{filename}.xlsx");
+                        transacationAndCategories.SaveAs(new FileInfo(fullPath));
+                    }
+                    catch (Exception e)
+                    {
+                        return BadRequest("Transactions Update With Categories Can't be saved :" + e.Message);
+                    }
+
+
+
                 }
 
-                //workSheet.Tables.Delete("YearExpenses");
+                using (var cashflowExcelPkg = new ExcelPackage(GetAssemblyFile("Budget Cashflow.xlsx")))
+                {
+                    try
+                    {
+                        UpdateBudgetCashFlow(cashflowExcelPkg, movementsViewModels, categoryList, year);
+                    }
+                    catch (Exception)
+                    {
+                        return BadRequest("Cant creat Cashflow Excel File");
+                    }
+                    // Save Excel Package
+                    try
+                    {
+                        var filename = "Budget Cashflow (1)";
+                        string contentRootPath = _hostingEnvironment.ContentRootPath;
 
-                // add all year categoiers 
-                ExcelServices.CreateYearExpensesTable(movementsViewModels, categoryList, year, ExpensesWSheet, "YearExpenses", "B38");
-
-                // update Year table
-
-                //Get Adress to budget table
-                var categoryListWithTotals = Helpers.AddItemsToIenumeration(categoryList, new List<string>() { "Sub Total", "Total" });
-                var CategoriesAddressWithTotals = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "Year_budget");
-
-                //Get address to expenses table
-                var CategoriesAddress = ExcelServices.GetColumnsNameAdress(categoryListWithTotals, ExpensesWSheet, "YearExpenses");
-
-                //Update year excel table
-                var yearWSheet = excelPkg.Workbook.Worksheets["Year summary"];
-
-                ExcelServices.UpdateYearTableValues(CategoriesAddressWithTotals, year, yearWSheet, "tblOperatingExpenses", "BUDGET", "Total");
-                ExcelServices.UpdateYearTableValues(CategoriesAddress, year, yearWSheet, "tblOperatingExpenses", "ACTUAL", "Total");
-
-                // get address to Month budget table
-                var categoriesWithoutIncome = Helpers.DeleteItemsfromIenumeration(categoryList, new List<string>() { "Åse", "Matias" });
-                var monthBudgetCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, ExpensesWSheet, "Year_budget");
-                var monthExpensesCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, ExpensesWSheet, "YearExpenses");
-
-                //update month Table with the categories summary
-                var monthWSheet = excelPkg.Workbook.Worksheets["Monthly summary"];
-
-                ExcelServices.UpdateClassesTableValues(monthBudgetCategoriesAddress, monthExpensesCategoriesAddress, year, monthWSheet, "tblOperatingExpenses7");
-
+                        var fullPath = Path.Combine(contentRootPath, "DataTemp", $"{filename}.xlsx");
+                        cashflowExcelPkg.SaveAs(new FileInfo(fullPath));
+                        return Ok("File " + filename + "cretated in :" + fullPath);
+                    }
+                    catch (Exception e)
+                    {
+                        return BadRequest("Can't be saved :" + e.Message);
+                    }
+                }
             }
-            catch (Exception e)
-            {
-                var noko = e.Message;
-            }
-            Dictionary<string, string> filesPath = new Dictionary<string, string>();
-            // Save Excel Package
-            try
-            {
-                var filename = Path.GetFileNameWithoutExtension(transacation.FileName);
-                var path = Path.Combine(@"h:\", "Transactions");
-
-                Directory.CreateDirectory(path);
-                excelPkg.SaveAs(new FileInfo(Path.Combine(path, string.Concat($"{filename}_New.xlsx"))));
-                filesPath.Add(filename, path);
-            }
-            catch
-            {
-
-                return BadRequest("Can't be saved");
-            }
-
-            return Ok("Created in:" + filesPath);
-
         }
 
         private static Stream GetAssemblyFile(string fileName)
@@ -324,7 +292,151 @@ namespace homeBudget.Controllers
                     return true;
                 }
             }
+
             return false;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="year"></param>
+        /// <param name="transactionUpdatePackage"></param>
+        /// <param name="movementsViewModels"></param>
+        /// <param name="categoriesArray"></param>
+        private static void AddCategoriesAverage(int year, ExcelPackage transactionUpdatePackage, List<MovementsViewModel> movementsViewModels, string[] categoriesArray)
+        {
+            ExcelWorksheet categoriesAverageWSheet = transactionUpdatePackage.Workbook.Worksheets["Categories Average"];
+            if (categoriesAverageWSheet != null)
+            {
+                //ExcelHelpers.DeldeteExcelTablesFromWorkSheet(categoriesAverageWSheet);
+                transactionUpdatePackage.Workbook.Worksheets.Delete("Categories Average");
+                categoriesAverageWSheet = transactionUpdatePackage.Workbook.Worksheets.Add("Categories Average new");
+            }
+            else
+            {
+                categoriesAverageWSheet = transactionUpdatePackage.Workbook.Worksheets.Add("Categories Average");
+            }
+
+            ExcelServices.AddSheetHeading(categoriesAverageWSheet, "Transactions and Categories");
+
+            var yearMonthTable = ExcelServices.CreateAverageForYearMonthDay(movementsViewModels, categoriesAverageWSheet, categoriesArray, year, 0, true);
+
+            var endTableRow = yearMonthTable.Address.End.Row;
+            var categoryMonthAvgTable = ExcelServices.CreateCategoriesMonthsAveragetest(categoriesAverageWSheet, endTableRow, movementsViewModels, categoriesArray, year, true);
+        }
+
+
+        private void UpdateBudgetCashFlow(ExcelPackage excelPackage, List<MovementsViewModel> movementsViewModels, List<string> categoriesArray, int year)
+        {
+            ExcelTable yearBudgetTable = null;
+            ExcelTable yearExpensesTable = null;
+            if (year == 0)
+            {
+                year = DateTime.Today.Year;
+            }
+
+            // Create Cashflow
+            var expensesWSheet = excelPackage.Workbook.Worksheets["Expenses details"];
+
+            // add year categoiers Table
+            try
+            {
+                var yearExpensesTables = ExcelServices.CreateExcelMonthSummaryTableFromMovementsViewModel(expensesWSheet, movementsViewModels, categoriesArray, year, "YearExpenses", true, "B38");
+                yearExpensesTable = yearExpensesTables.FirstOrDefault();
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Creating Year expensesTable Sheet. Error message : " + e.Message);
+            }
+
+
+
+            // add year incoms categoiers 
+            try
+            {
+                var yearIncomsTables = ExcelServices.CreateExcelMonthSummaryTableFromMovementsViewModel(expensesWSheet, movementsViewModels, categoriesArray, year, "YearIncoms", false, "B54");
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Problem Creating Year IncomsTable Sheet. Error message : " + e.Message);
+            }
+
+            // update Year table
+            Dictionary<string, string> categoriesAddressWithTotals = null;
+            Dictionary<string, string> categoriesAddress = null;
+            //Add sub total and total to list to get them from budget table
+            try
+            {
+                var categoryListWithTotals = Helpers.AddItemsToIenumeration(categoriesArray, new List<string>() { "Sub Total", "Total" });
+                yearBudgetTable = expensesWSheet.Tables["Year_budget"];
+                var listWithTotals = categoryListWithTotals as string[] ?? categoryListWithTotals.ToArray();
+                if (yearBudgetTable != null)
+                {
+                    categoriesAddressWithTotals = ExcelHelpers.GetNamesAdress(listWithTotals, yearBudgetTable);
+                }
+
+                //Get address to expenses table
+                categoriesAddress = ExcelServices.GetColumnsNameAdress(listWithTotals, yearExpensesTable);
+
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Cant get Info from table from 'Expenses details' sheet. Error message : " + e.Message);
+            }
+
+            //Update year excel table
+            try
+            {
+                var yearWSheet = excelPackage.Workbook.Worksheets["Year summary"];
+                var tblOperatingExpensesTable = yearWSheet.Tables["tblOperatingExpenses"];
+                string keyCellValue = null;
+                if (categoriesAddressWithTotals != null)
+                {
+                    if (categoriesAddressWithTotals.TryGetValue("Total", out keyCellValue))
+                    {
+                        ExcelServices.UpdateTableValues(tblOperatingExpensesTable, "BUDGET", keyCellValue);
+                    }
+                }
+
+                if (categoriesAddress != null)
+                {
+                    if (categoriesAddress.TryGetValue("Total", out keyCellValue))
+                    {
+                        ExcelServices.UpdateTableValues(tblOperatingExpensesTable, "ACTUAL", keyCellValue);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Cant tables in 'Year summary' Table values. Error message : " + e.Message);
+            }
+
+            Dictionary<string, string> monthBudgetCategoriesAddress = null;
+            Dictionary<string, string> monthExpensesCategoriesAddress = null;
+            try
+            {
+                // get address to Month budget table
+                var categoriesWithoutIncome = Helpers.DeleteItemsfromIenumeration(categoriesArray, new List<string>() { "Åse", "Matias" });
+                monthBudgetCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, yearBudgetTable);
+                monthExpensesCategoriesAddress = ExcelServices.GetColumnsNameAdress(categoriesWithoutIncome, yearExpensesTable);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Cant get tables info from 'Expenses details' sheet to update Class table. Error message : " + e.Message);
+            }
+
+            //update month Table with the categories summary
+            try
+            {
+                var monthWSheet = excelPackage.Workbook.Worksheets["Monthly summary"];
+                var tblOperatingExpenses7Table = monthWSheet.Tables["tblOperatingExpenses7"];
+                ExcelServices.UpdateClassesTableValues(monthBudgetCategoriesAddress, monthExpensesCategoriesAddress, tblOperatingExpenses7Table);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Cant update tblOperatingExpenses7 in 'Monthly summary' sheet. Error message : " + e.Message);
+            }
+
+            //return excelPackage;
         }
     }
 }
