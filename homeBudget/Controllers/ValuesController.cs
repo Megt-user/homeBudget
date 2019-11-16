@@ -17,14 +17,21 @@ namespace homeBudget.Controllers
         [HttpGet]
         public IEnumerable<string> Get()
         {
-            return new string[] { "value 1", "Value 2"};
+            return new string[] { "value 1", "Value 2" };
         }
 
         //GET api/values/5
         [HttpGet("{id}")]
         public IActionResult Get(int id, string query)
         {
-            return Ok(new Transaction { Id= id, AcountName = "value"+id});
+            return Ok(new Transaction
+            {
+                Id = id,
+                BankAccount = new BankAccount()
+                {
+                    AccountNumber = "value" + id
+                }
+            });
         }
 
 
@@ -39,6 +46,6 @@ namespace homeBudget.Controllers
             return CreatedAtAction("Get", new { id = value.Id }, value);
         }
 
-        
+
     }
 }

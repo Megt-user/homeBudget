@@ -11,8 +11,12 @@ namespace homeBudget.Models
         public int Id { get; set; }
         [Required]
         public string Name { get; set; }
-        //    public double XCoordinate { get; set; }
-        //    public double YCoordinate { get; set; }
+        public double XCoordinate { get; set; }
+        public double YCoordinate { get; set; }
         public SubCategory SubCategory { get; set; }
+
+        public ICollection<TransactionsKeewords> TransactionsKeewordses { get; set; }
+
+        //public IEnumerable<Transaction> Transactions
     }
 }

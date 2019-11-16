@@ -8,8 +8,8 @@ namespace homeBudget.Models
         public string KeyWord { get; set; }
         public string Category { get; set; }
         public string SupPorject { get; set; }
-        
-        public ICollection<Transaction> Transactions { get; set; }
+
+        public ICollection<KeeWord> KeeWord { get; set; }
 
     }
 }

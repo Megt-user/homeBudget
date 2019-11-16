@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace homeBudget.Models
 {
@@ -8,9 +9,8 @@ namespace homeBudget.Models
         public DateTime DateTime { get; set; }
         public string Text { get; set; }
         public double Amount { get; set; }
-        
-        public BankAccount BankAccount { get; set; }
 
-        public SubCategory SubCategory { get; set; }
+        public BankAccount BankAccount { get; set; }
+        public KeeWord KeeWord { get; set; }
     }
 }
