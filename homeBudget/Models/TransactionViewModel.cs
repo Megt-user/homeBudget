@@ -18,7 +18,7 @@ namespace homeBudget.Models
 
         public TransactionViewModel()
         {
-            excelColumns = new List<string>() {"Id", "DateTime", "Text","Amount","KeyWord", "Category","SupPorject", "AcountName" };
+            excelColumns = new List<string>() {"Id", "DateTime", "Text","Amount","KeyWord", "Category","SubPorject", "AcountName" };
         }
 
     }

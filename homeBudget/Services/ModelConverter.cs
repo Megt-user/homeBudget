@@ -160,56 +160,100 @@ namespace homeBudget.Services
         //TODO check name and transaction value to create a rule to place the transaction in the right category f.eks. Husly > 200 NOK = House not Social
         public static SubCategory AddSubcategoriesToMovement(IEnumerable<SubCategory> subcategoriesMatch)
         {
-            var values = Enum.GetValues(typeof(MistmuchKeewords)).Cast<MistmuchKeewords>();
-
-
             var subcategory = new SubCategory();
-            string supPorject = null;
+            string subCategoryName = null;
+            string subProject = null;
+
             var subCategories = subcategoriesMatch as SubCategory[] ?? subcategoriesMatch.ToArray();
             var moreThanOneCategory = subCategories.Select(sub => sub.Category).Distinct().Count() > 1;
 
-
-            
-            
             if (moreThanOneCategory)
             {
-                var subcategoryNames = subCategories.Select(sub => sub.KeyWord).ToArray();
-                var subcategoryCategories = subCategories.Select(sub => sub.Category).ToArray();
-                if (subcategoryCategories.Contains("Mat"))
+                var keeWords = subCategories.Select(sub => sub.KeyWord).Distinct().ToArray();
+                var subcategoryCategories = subCategories.Select(sub => sub.Category).Distinct().ToArray();
+                if (ArrayCointains(subcategoryCategories, "Mat"))
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = "Mat";
-                    supPorject = "Mismatch";
+                    subCategoryName = "Mat";
+                    subProject = "Mismatch";
                 }
-                else if (subcategoryCategories.Contains(""))
+                else if (ArrayCointains(subcategoryCategories, "Vinmonopolet"))
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = "Vinmonopolet";
-                    supPorject = "Mismatch";
+                    subCategoryName = "Vinmonopolet";
+                    subProject = "Mismatch";
                 }
-                else if (subcategoryNames.Contains(""))
+                else if (ArrayCointains(keeWords, "ffo"))
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = subCategories.First(cat => cat.KeyWord == "ffo").Category;
-                    supPorject = "Mismatch";
+                    subCategoryName = "ffo";
+                    subProject = "Mismatch";
                 }
-                else if (ArrayCointains(subcategoryNames, "Matias"))
+                else if (ArrayCointains(keeWords, "Matias"))
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = subCategories.First(cat => cat.KeyWord == "matias").Category;
+                    subcategory.Category = "Matias";
+                }else if (ArrayCointains(keeWords, "Åse"))
+                {
+                    subcategory.Category = "Åse";
+
+                }else if (ArrayCointains(keeWords, "Oscar"))
+                {
+                    subCategoryName = "Oscar";
+                    subProject = "Mismatch";
+                }else if (ArrayCointains(keeWords, "BRUKÅS"))
+                {
+                    subCategoryName = "Sport";
+                    subProject = "Mismatch";
                 }
-                else if (ArrayCointains(subcategoryNames, "Åse"))
+                else if (ArrayCointains(keeWords, "Hermann Ivarson"))
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = subCategories.First(cat => cat.KeyWord == "Åse").Category;
+                    subCategoryName = "Utlaie";
+                    subProject = "Mismatch";
+                } else if (ArrayCointains(keeWords, "Forsikring"))
+                {
+                    subCategoryName = "Forsikring";
+                    subProject = "Mismatch";
+                }
+                //TODO verifique cómo crear privilegios para configurar la subcategoría por ejemplo Hovden / Mat subcategoría cuando Mat debe ser comida pero otras causas Fritid
+                else if (ArrayCointains(keeWords, "yx")) 
+                {
+                    subCategoryName = "Diesel";
+                    subProject = "Mismatch";
+                }else if (ArrayCointains(keeWords, "CIRCLE K")) 
+                {
+                    subCategoryName = "Diesel";
+                    subProject = "Mismatch";
+                }else if (ArrayCointains(keeWords, "Hovden")) 
+                {
+                    subCategoryName = "Fritid";
+                    subProject = "Mismatch";
+                }else if (ArrayCointains(keeWords, "cf")) 
+                {
+                    subCategoryName = "House";
+                    subProject = "Mismatch";
+                }else if (ArrayCointains(keeWords, "HVASSER")) 
+                {
+                    subCategoryName = "Fritid";
+                    subProject = "Mismatch";
+                }else if (ArrayCointains(keeWords, "Husly")) 
+                {
+                    subCategoryName = "House";
+                    subProject = "Mismatch";
+                }else if (ArrayCointains(keeWords, "SANDEN CAMPING")) 
+                {
+                    subCategoryName = "Fritid";
+                    subProject = "Mismatch";
+                }else if (ArrayCointains(keeWords, "SKARPHEDIN")) 
+                {
+                    subCategoryName = "Familly";
+                    subProject = "Mismatch";
                 }
                 else
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = string.Join(",", subcategoryCategories);
-                    supPorject = "Mismatch";
+                    subCategoryName = string.Join(",", subcategoryCategories);
+                    subProject = "Mismatch";
                 }
-                subcategory.SupPorject = supPorject;
+               
+                subcategory.KeyWord = string.Join(",", keeWords);
+                subcategory.Category = subCategoryName;
+                subcategory.SubPorject = subProject;
             }
             else
             {
@@ -282,9 +326,6 @@ namespace homeBudget.Services
             return ModelOperation.SumByType(monthAndYaerMovements, justExtrations);
         }
 
-
-
-
         public static List<string> GetListOfCategories(List<TransactionViewModel> momvents)
         {
             var list = momvents.Where(m => m.SupPorject != "Mismatch" && !string.IsNullOrEmpty(m.Category))
@@ -292,6 +333,5 @@ namespace homeBudget.Services
             return list;
 
         }
-    }
     }
 }

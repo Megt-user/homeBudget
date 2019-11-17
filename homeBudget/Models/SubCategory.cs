@@ -6,7 +6,7 @@ namespace homeBudget.Models
     {
         public string KeyWord { get; set; }
         public string Category { get; set; }
-        public string SupPorject { get; set; }
+        public string SubPorject { get; set; }
         public List<AccountMovement> accountMovements { get; set; }
     }
 }

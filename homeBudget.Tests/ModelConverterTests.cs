@@ -89,7 +89,7 @@ namespace homeBudget.Tests
             var noko = categorisModel.Where(c => (c.Category == "Mat" || c.Category == "Familly"));
             var subcategory = ModelConverter.AddSubcategoriesToMovement(noko);
 
-            subcategory.SupPorject.Should().BeEquivalentTo("Mismatch");
+            subcategory.SubPorject.Should().BeEquivalentTo("Mismatch");
         }
     }
 }
