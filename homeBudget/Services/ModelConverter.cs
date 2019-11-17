@@ -3,12 +3,21 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using homeBudget.Models;
+using homeBudget.Services.Logger;
 using Newtonsoft.Json.Linq;
 
 namespace homeBudget.Services
 {
     public class ModelConverter
     {
+        ILogEntryService _logEntry;
+        
+        public ModelConverter(ILogEntryService logEntry)
+        {
+            _logEntry = logEntry;
+        }
+
+
         public AccountMovement JsonToAccountMovement(JToken json)
         {
             AccountMovement accountMovement = new AccountMovement();
@@ -21,7 +30,7 @@ namespace homeBudget.Services
             var subCategories = new List<SubCategory>();
             foreach (var item in jArray)
             {
-                subCategories.Add(new ModelConverter().JsonToSubCategory(item));
+                subCategories.Add(JsonToSubCategory(item));
             }
             return subCategories;
         }
@@ -31,7 +40,7 @@ namespace homeBudget.Services
             return jArray.Select(item => (AccountMovement)ParseObjectProperties(new AccountMovement(), item)).ToList();
         }
 
-        public SubCategory JsonToSubCategory(JToken json)
+        public static SubCategory JsonToSubCategory(JToken json)
         {
             SubCategory subCategories = new SubCategory();
             var noko = ParseObjectProperties(subCategories, json);
@@ -40,7 +49,7 @@ namespace homeBudget.Services
 
         }
 
-        public TransactionViewModel JsonToMovementsViewModels(JToken json)
+        public static TransactionViewModel JsonToMovementsViewModels(JToken json)
         {
             var movementsViewModel = new TransactionViewModel();
             var noko = ParseObjectProperties(movementsViewModel, json);

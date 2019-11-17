@@ -55,7 +55,7 @@ namespace homeBudget.Tests
         }
 
         [Fact]
-        public void Test2()
+        public static void Test2()
         {
             //Get MovementsModel
             JArray JsonmodementsViewModels;
@@ -69,7 +69,7 @@ namespace homeBudget.Tests
             var movementsViewModels = new List<TransactionViewModel>();
             foreach (var item in JsonmodementsViewModels)
             {
-                movementsViewModels.Add(new ModelConverter().JsonToMovementsViewModels(item));
+                movementsViewModels.Add( ModelConverter.JsonToMovementsViewModels(item));
             }
 
             // Get Categories
