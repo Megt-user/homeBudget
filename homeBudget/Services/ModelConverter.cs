@@ -162,7 +162,7 @@ namespace homeBudget.Services
         {
             var subcategory = new SubCategory();
             string subCategoryName = null;
-            string subProject = null;
+            string subProject = "Mismatch";
 
             var subCategories = subcategoriesMatch as SubCategory[] ?? subcategoriesMatch.ToArray();
             var moreThanOneCategory = subCategories.Select(sub => sub.Category).Distinct().Count() > 1;
@@ -174,83 +174,81 @@ namespace homeBudget.Services
                 if (ArrayCointains(subcategoryCategories, "Mat"))
                 {
                     subCategoryName = "Mat";
-                    subProject = "Mismatch";
                 }
                 else if (ArrayCointains(subcategoryCategories, "Vinmonopolet"))
                 {
                     subCategoryName = "Vinmonopolet";
-                    subProject = "Mismatch";
+                }
+                else if (ArrayCointains(subcategoryCategories, "Diesel"))
+                {
+                    subCategoryName = "Diesel";
                 }
                 else if (ArrayCointains(keeWords, "ffo"))
                 {
                     subCategoryName = "ffo";
-                    subProject = "Mismatch";
                 }
                 else if (ArrayCointains(keeWords, "Matias"))
                 {
-                    subcategory.Category = "Matias";
-                }else if (ArrayCointains(keeWords, "Åse"))
+                    subCategoryName = "Matias";
+                    subProject = "kontantinnsats";
+                }
+                else if (ArrayCointains(keeWords, "Åse"))
                 {
-                    subcategory.Category = "Åse";
+                    subCategoryName = "Åse";
+                    subProject = "kontantinnsats";
 
-                }else if (ArrayCointains(keeWords, "Oscar"))
+                }
+                else if (ArrayCointains(keeWords, "Oscar"))
                 {
                     subCategoryName = "Oscar";
-                    subProject = "Mismatch";
-                }else if (ArrayCointains(keeWords, "BRUKÅS"))
+                }
+                else if (ArrayCointains(keeWords, "BRUKÅS"))
                 {
                     subCategoryName = "Sport";
-                    subProject = "Mismatch";
                 }
                 else if (ArrayCointains(keeWords, "Hermann Ivarson"))
                 {
                     subCategoryName = "Utlaie";
-                    subProject = "Mismatch";
-                } else if (ArrayCointains(keeWords, "Forsikring"))
+                }
+                else if (ArrayCointains(keeWords, "Forsikring"))
                 {
                     subCategoryName = "Forsikring";
-                    subProject = "Mismatch";
                 }
-                //TODO verifique cómo crear privilegios para configurar la subcategoría por ejemplo Hovden / Mat subcategoría cuando Mat debe ser comida pero otras causas Fritid
-                else if (ArrayCointains(keeWords, "yx")) 
-                {
-                    subCategoryName = "Diesel";
-                    subProject = "Mismatch";
-                }else if (ArrayCointains(keeWords, "CIRCLE K")) 
-                {
-                    subCategoryName = "Diesel";
-                    subProject = "Mismatch";
-                }else if (ArrayCointains(keeWords, "Hovden")) 
+                ////TODO verifique cómo crear privilegios para configurar la subcategoría por ejemplo Hovden / Mat subcategoría cuando Mat debe ser comida pero otras causas Fritid
+                //else if (ArrayCointains(keeWords, "yx")) 
+                //{
+                //    subCategoryName = "Diesel";
+                //    subProject = "Mismatch";
+                //}
+                else if (ArrayCointains(keeWords, "Hovden"))
                 {
                     subCategoryName = "Fritid";
-                    subProject = "Mismatch";
-                }else if (ArrayCointains(keeWords, "cf")) 
+                }
+                else if (ArrayCointains(keeWords, "cf"))
                 {
                     subCategoryName = "House";
-                    subProject = "Mismatch";
-                }else if (ArrayCointains(keeWords, "HVASSER")) 
+                }
+                else if (ArrayCointains(keeWords, "HVASSER"))
                 {
                     subCategoryName = "Fritid";
-                    subProject = "Mismatch";
-                }else if (ArrayCointains(keeWords, "Husly")) 
+                }
+                else if (ArrayCointains(keeWords, "Husly"))
                 {
                     subCategoryName = "House";
-                    subProject = "Mismatch";
-                }else if (ArrayCointains(keeWords, "SANDEN CAMPING")) 
+                }
+                else if (ArrayCointains(keeWords, "SANDEN CAMPING"))
                 {
                     subCategoryName = "Fritid";
-                    subProject = "Mismatch";
-                }else if (ArrayCointains(keeWords, "SKARPHEDIN")) 
+                }
+                else if (ArrayCointains(keeWords, "SKARPHEDIN"))
                 {
                     subCategoryName = "Familly";
-                    subProject = "Mismatch";
                 }
                 else
                 {
                     subCategoryName = string.Join(",", subcategoryCategories);
-                    subProject = "Mismatch";
                 }
-               
+
                 subcategory.KeyWord = string.Join(",", keeWords);
                 subcategory.Category = subCategoryName;
                 subcategory.SubPorject = subProject;
@@ -328,7 +326,7 @@ namespace homeBudget.Services
 
         public static List<string> GetListOfCategories(List<TransactionViewModel> momvents)
         {
-            var list = momvents.Where(m => m.SupPorject != "Mismatch" && !string.IsNullOrEmpty(m.Category))
+            var list = momvents.Where(m => m.SubPorject != "Mismatch" && !string.IsNullOrEmpty(m.Category))
                 .Select(m => m.Category).Distinct().ToList();
             return list;
 
