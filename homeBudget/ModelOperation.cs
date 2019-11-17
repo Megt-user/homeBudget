@@ -19,7 +19,7 @@ namespace homeBudget
         /// <param name="month"></param>
         /// <param name="justExtrations">'true' it is just extractions</param>
         /// <returns></returns>
-        public static double GetTotalforCategory(IEnumerable<MovementsViewModel> movements, string category, int? year = null, int? month = null, bool justExtrations = true)
+        public static double GetTotalforCategory(IEnumerable<TransactionViewModel> movements, string category, int? year = null, int? month = null, bool justExtrations = true)
         {
 
             var monthAndYaerMovements = GetMovementByMonthYear(movements, year, month);
@@ -39,10 +39,10 @@ namespace homeBudget
         /// <param name="year"></param>
         /// <param name="month"></param>
         /// <returns></returns>
-        public static IEnumerable<MovementsViewModel> GetMovementByMonthYear(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null)
+        public static IEnumerable<TransactionViewModel> GetMovementByMonthYear(IEnumerable<TransactionViewModel> movements, int? year = null, int? month = null)
         {
-            IEnumerable<MovementsViewModel> movementsTemp = null;
-            var movementsViewModels = movements as MovementsViewModel[] ?? movements.ToArray();
+            IEnumerable<TransactionViewModel> movementsTemp = null;
+            var movementsViewModels = movements as TransactionViewModel[] ?? movements.ToArray();
             if (year != null)
                 movementsTemp = movementsViewModels.Where(move => move.DateTime.Year == year);
             if (month != null)
@@ -57,7 +57,7 @@ namespace homeBudget
         /// <param name="categories"></param>
         /// <param name="movementsModel"></param>
         /// <returns></returns>
-        public static List<string> GetExtractionCategories(IEnumerable<string> categories, List<MovementsViewModel> movementsModel)
+        public static List<string> GetExtractionCategories(IEnumerable<string> categories, List<TransactionViewModel> movementsModel)
         {
             return categories.Where(category => movementsModel.Where(mv => mv.Category == category).Any(mv => mv.Amount < 0)).ToList();
         }
@@ -68,7 +68,7 @@ namespace homeBudget
         /// <param name="categories"></param>
         /// <param name="movementsModel"></param>
         /// <returns></returns>
-        public static List<string> GetIncomsCategories(IEnumerable<string> categories, List<MovementsViewModel> movementsModel)
+        public static List<string> GetIncomsCategories(IEnumerable<string> categories, List<TransactionViewModel> movementsModel)
         {
             return categories.Where(category => movementsModel.Where(mv => mv.Category == category).Any(mv => mv.Amount > 0)).ToList();
         }
@@ -79,10 +79,10 @@ namespace homeBudget
         /// <param name="justExtrations">'true' if it is just extractions, 'false' just incomes, 'null' both</param>
         /// <param name="movementsViewModels"></param>
         /// <returns></returns>
-        public static double SumByType(IEnumerable<MovementsViewModel> movementsViewModels, bool? justExtrations = null)
+        public static double SumByType(IEnumerable<TransactionViewModel> movementsViewModels, bool? justExtrations = null)
         {
             double sum = 0;
-            var viewModels = movementsViewModels as MovementsViewModel[] ?? movementsViewModels.ToArray();
+            var viewModels = movementsViewModels as TransactionViewModel[] ?? movementsViewModels.ToArray();
             if (viewModels.Any())
             {
                 if (justExtrations.HasValue)
@@ -110,7 +110,7 @@ namespace homeBudget
 
 
 
-        public static double AverageforCategory(IEnumerable<MovementsViewModel> movements, string category, int? year = null, int? month = null, bool justExtrations = true)
+        public static double AverageforCategory(IEnumerable<TransactionViewModel> movements, string category, int? year = null, int? month = null, bool justExtrations = true)
         {
             var monthAndYaerMovements = ModelOperation.GetMovementByMonthYear(movements, year == 0 ? null : year, month == 0 ? null : month);
 

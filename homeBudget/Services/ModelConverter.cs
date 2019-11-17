@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -40,9 +40,9 @@ namespace homeBudget.Services
 
         }
 
-        public MovementsViewModel JsonToMovementsViewModels(JToken json)
+        public TransactionViewModel JsonToMovementsViewModels(JToken json)
         {
-            var movementsViewModel = new MovementsViewModel();
+            var movementsViewModel = new TransactionViewModel();
             var noko = ParseObjectProperties(movementsViewModel, json);
 
             return movementsViewModel;
@@ -104,25 +104,25 @@ namespace homeBudget.Services
             return properties?.Select(prop => prop.Name).ToList();
         }
 
-        public static List<MovementsViewModel> CreateMovementsViewModels(List<AccountMovement> accountMovements, List<SubCategory> subCategories, string acountName)
+        public static List<TransactionViewModel> CreateMovementsViewModels(List<AccountMovement> accountMovements, List<SubCategory> subCategories, string acountName)
         {
-            var moventsViewModel = new List<MovementsViewModel>();
+            var moventsViewModel = new List<TransactionViewModel>();
             foreach (var movement in accountMovements)
             {
-                MovementsViewModel movementViewModel = new MovementsViewModel() { AcountName = acountName };
+                TransactionViewModel transactionViewModel = new TransactionViewModel() { AcountName = acountName };
 
                 // Add values to model if it find same property name
-                AddValuesToMovementsViewModel(movement, ref movementViewModel);
+                AddValuesToMovementsViewModel(movement, ref transactionViewModel);
 
-                movementViewModel = UpdateMovementViewModelWithSubCategory(subCategories, movementViewModel);
+                transactionViewModel = UpdateMovementViewModelWithSubCategory(subCategories, transactionViewModel);
 
-                moventsViewModel.Add(movementViewModel);
+                moventsViewModel.Add(transactionViewModel);
             }
             AddUnspecifiedTransaction(ref moventsViewModel);
             return moventsViewModel;
         }
 
-        private static void AddUnspecifiedTransaction(ref List<MovementsViewModel> moventsViewModel)
+        private static void AddUnspecifiedTransaction(ref List<TransactionViewModel> moventsViewModel)
         {
             var listOfUnspecifiedTransaction = moventsViewModel.Where(mv => string.IsNullOrEmpty(mv.Category));
             foreach (var movent in listOfUnspecifiedTransaction)
@@ -131,22 +131,22 @@ namespace homeBudget.Services
             }
         }
 
-        public static MovementsViewModel UpdateMovementViewModelWithSubCategory(List<SubCategory> subCategories, MovementsViewModel movementModel)
+        public static TransactionViewModel UpdateMovementViewModelWithSubCategory(List<SubCategory> subCategories, TransactionViewModel transactionModel)
         {
             try
             {
 
-                if (!string.IsNullOrEmpty(movementModel.Text))
+                if (!string.IsNullOrEmpty(transactionModel.Text))
                 {
 
-                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
+                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(transactionModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
 
                     if (subcategoriesMatch != null && subcategoriesMatch.Count() > 0)
                     {
                         if (subcategoriesMatch.Count() == 1)
-                            AddValuesToMovementsViewModel(subcategoriesMatch.FirstOrDefault(), ref movementModel);
+                            AddValuesToMovementsViewModel(subcategoriesMatch.FirstOrDefault(), ref transactionModel);
                         else
-                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref movementModel);
+                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref transactionModel);
                     }
                 }
             }
@@ -154,19 +154,25 @@ namespace homeBudget.Services
             {
                 //
             }
-            return movementModel;
+            return transactionModel;
         }
 
-
+        //TODO check name and transaction value to create a rule to place the transaction in the right category f.eks. Husly > 200 NOK = House not Social
         public static SubCategory AddSubcategoriesToMovement(IEnumerable<SubCategory> subcategoriesMatch)
         {
+            var values = Enum.GetValues(typeof(MistmuchKeewords)).Cast<MistmuchKeewords>();
+
+
             var subcategory = new SubCategory();
             string supPorject = null;
             var subCategories = subcategoriesMatch as SubCategory[] ?? subcategoriesMatch.ToArray();
             var moreThanOneCategory = subCategories.Select(sub => sub.Category).Distinct().Count() > 1;
+
+
+            
+            
             if (moreThanOneCategory)
             {
-
                 var subcategoryNames = subCategories.Select(sub => sub.KeyWord).ToArray();
                 var subcategoryCategories = subCategories.Select(sub => sub.Category).ToArray();
                 if (subcategoryCategories.Contains("Mat"))
@@ -175,13 +181,13 @@ namespace homeBudget.Services
                     subcategory.Category = "Mat";
                     supPorject = "Mismatch";
                 }
-                else if (subcategoryCategories.Contains("Vinmonopolet"))
+                else if (subcategoryCategories.Contains(""))
                 {
                     subcategory.KeyWord = string.Join(",", subcategoryNames);
                     subcategory.Category = "Vinmonopolet";
                     supPorject = "Mismatch";
                 }
-                else if (subcategoryNames.Contains("ffo"))
+                else if (subcategoryNames.Contains(""))
                 {
                     subcategory.KeyWord = string.Join(",", subcategoryNames);
                     subcategory.Category = subCategories.First(cat => cat.KeyWord == "ffo").Category;
@@ -218,17 +224,17 @@ namespace homeBudget.Services
         }
 
         //Loop through all the properties
-        public static void AddValuesToMovementsViewModel(object movement, ref MovementsViewModel movementsViewModel)
+        public static void AddValuesToMovementsViewModel(object movement, ref TransactionViewModel transactionViewModel)
         {
-            foreach (var property in movementsViewModel.GetType().GetProperties())
+            foreach (var property in transactionViewModel.GetType().GetProperties())
             {
                 var propertyValue = GetPropertyValue(movement, property.Name);
                 if (propertyValue != null)
                 {
-                    var properties = GetPropertiesNamesFromObject(movementsViewModel);
+                    var properties = GetPropertiesNamesFromObject(transactionViewModel);
                     if (properties.Contains(property.Name))
                     {
-                        movementsViewModel.GetType().GetProperty(property.Name)?.SetValue(movementsViewModel, propertyValue);
+                        transactionViewModel.GetType().GetProperty(property.Name)?.SetValue(transactionViewModel, propertyValue);
                     }
                 }
             }
@@ -253,7 +259,7 @@ namespace homeBudget.Services
         }
 
 
-        public static IEnumerable<MovementsViewModel> GetMovementsViewModelsByType(bool justExtrations, IEnumerable<MovementsViewModel> monthAndYaerMovements)
+        public static IEnumerable<TransactionViewModel> GetMovementsViewModelsByType(bool justExtrations, IEnumerable<TransactionViewModel> monthAndYaerMovements)
         {
             if (justExtrations)
                 return monthAndYaerMovements.Where(mv => mv.Amount < 0).ToList();
@@ -263,13 +269,13 @@ namespace homeBudget.Services
 
 
 
-        public static double CategoriesMonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
+        public static double CategoriesMonthYearTotal(IEnumerable<TransactionViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
         {
 
             var monthAndYaerMovements = movements.Where(mov => !string.IsNullOrEmpty(mov.Category) && mov.DateTime.Year == year && mov.DateTime.Month == month);
             return ModelOperation.SumByType(monthAndYaerMovements, justExtrations);
         }
-        public static double MonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
+        public static double MonthYearTotal(IEnumerable<TransactionViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
         {
             var monthAndYaerMovements = movements.Where(mov => mov.DateTime.Year == year && mov.DateTime.Month == month);
 
@@ -279,11 +285,13 @@ namespace homeBudget.Services
 
 
 
-        public static List<string> GetListOfCategories(List<MovementsViewModel> momvents)
+        public static List<string> GetListOfCategories(List<TransactionViewModel> momvents)
         {
             var list = momvents.Where(m => m.SupPorject != "Mismatch" && !string.IsNullOrEmpty(m.Category))
                 .Select(m => m.Category).Distinct().ToList();
             return list;
+
         }
+    }
     }
 }

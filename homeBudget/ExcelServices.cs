@@ -51,10 +51,10 @@ namespace homeBudget
         /// <param name="wsSheet"></param>
         /// <param name="tableName"></param>
         /// <returns></returns>
-        public static ExcelTable CreateExcelTableFromMovementsViewModel(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, string tableName)
+        public static ExcelTable CreateExcelTableFromMovementsViewModel(List<TransactionViewModel> movementsModel, ExcelWorksheet wsSheet, string tableName)
         {
             //Get the list of Column that want to be created in the table
-            var excelColumns = MovementsViewModel.excelColumns;
+            var excelColumns = TransactionViewModel.excelColumns;
 
             // Calculate size of the table
             var endTableCellAdress = ExcelHelpers.AddRowAndColumnToCellAddress(_startCell, movementsModel.Count, excelColumns.Count - 1);
@@ -88,7 +88,7 @@ namespace homeBudget
         /// <param name="justExtrations"></param>
         /// <param name="startCell"></param>
         /// <returns></returns>
-        public static List<ExcelTable> CreateExcelMonthSummaryTableFromMovementsViewModel(ExcelWorksheet wsSheet, List<MovementsViewModel> movementsModel, IEnumerable<string> categories,
+        public static List<ExcelTable> CreateExcelMonthSummaryTableFromMovementsViewModel(ExcelWorksheet wsSheet, List<TransactionViewModel> movementsModel, IEnumerable<string> categories,
             int sheetYear = 0, string sheetTableName = null, bool justExtrations = true, string startCell = null)
         {
            
@@ -171,7 +171,7 @@ namespace homeBudget
         /// <param name="month"></param>
         /// <param name="justExtrations"></param>
         /// <returns></returns>
-        public static ExcelTable CreateAverageForYearMonthDay(List<MovementsViewModel> movementsModel, ExcelWorksheet wsSheet, IEnumerable<string> categories,
+        public static ExcelTable CreateAverageForYearMonthDay(List<TransactionViewModel> movementsModel, ExcelWorksheet wsSheet, IEnumerable<string> categories,
             int year = 0, int? month = 0, bool justExtrations = true)
         {
             categories = justExtrations ? ModelOperation.GetExtractionCategories(categories, movementsModel) : ModelOperation.GetIncomsCategories(categories, movementsModel);
@@ -270,7 +270,7 @@ namespace homeBudget
         /// <param name="year"></param>
         /// <param name="justExtrations"></param>
         /// <returns></returns>
-        public static ExcelTable CreateCategoriesMonthsAveragetest(ExcelWorksheet wsSheet, int startRow, List<MovementsViewModel> movementsModel, IEnumerable<string> categories,
+        public static ExcelTable CreateCategoriesMonthsAveragetest(ExcelWorksheet wsSheet, int startRow, List<TransactionViewModel> movementsModel, IEnumerable<string> categories,
             int year = 0, bool justExtrations = true)
         {
             categories = justExtrations ? ModelOperation.GetExtractionCategories(categories, movementsModel) : ModelOperation.GetIncomsCategories(categories, movementsModel);
@@ -428,7 +428,7 @@ namespace homeBudget
         }
 
         //
-        public static void UpdateBudgetCashFlow(ExcelPackage excelPackage, List<MovementsViewModel> movementsViewModels, List<string> categoriesArray, int year)
+        public static void UpdateBudgetCashFlow(ExcelPackage excelPackage, List<TransactionViewModel> movementsViewModels, List<string> categoriesArray, int year)
         {
             ExcelTable yearBudgetTable = null;
             ExcelTable yearExpensesTable = null;

@@ -169,7 +169,7 @@ namespace homeBudget.Controllers
             using (var stream = new FileStream(filePathTemp, FileMode.Create))
             {
                 await transactions.CopyToAsync(stream);
-                List<MovementsViewModel> movementsViewModels = null;
+                List<TransactionViewModel> movementsViewModels = null;
                 List<string> categoryList;
                 using (var transacationAndCategories = new ExcelPackage(stream))
                 {
@@ -183,8 +183,8 @@ namespace homeBudget.Controllers
 
                     if (jsonFromTable != null)
                     {
-                        movementsViewModels = jsonFromTable.ToObject<List<MovementsViewModel>>();
-                        //movementsViewModels = JsonConvert.DeserializeObject<List<MovementsViewModel>>(jsonFromTable?.ToString(), JsonServices.GetJsonSerializerSettings());
+                        movementsViewModels = jsonFromTable.ToObject<List<TransactionViewModel>>();
+                        //movementsViewModels = JsonConvert.DeserializeObject<List<TransactionViewModel>>(jsonFromTable?.ToString(), JsonServices.GetJsonSerializerSettings());
                     }
 
                     categoryList = ModelConverter.GetListOfCategories(movementsViewModels);
@@ -302,7 +302,7 @@ namespace homeBudget.Controllers
         /// <param name="transactionUpdatePackage"></param>
         /// <param name="movementsViewModels"></param>
         /// <param name="categoriesArray"></param>
-        private static void AddCategoriesAverage(int year, ExcelPackage transactionUpdatePackage, List<MovementsViewModel> movementsViewModels, string[] categoriesArray)
+        private static void AddCategoriesAverage(int year, ExcelPackage transactionUpdatePackage, List<TransactionViewModel> movementsViewModels, string[] categoriesArray)
         {
             ExcelWorksheet categoriesAverageWSheet = transactionUpdatePackage.Workbook.Worksheets["Categories Average"];
             if (categoriesAverageWSheet != null)
@@ -325,7 +325,7 @@ namespace homeBudget.Controllers
         }
 
 
-        private void UpdateBudgetCashFlow(ExcelPackage excelPackage, List<MovementsViewModel> movementsViewModels, List<string> categoriesArray, int year)
+        private void UpdateBudgetCashFlow(ExcelPackage excelPackage, List<TransactionViewModel> movementsViewModels, List<string> categoriesArray, int year)
         {
             ExcelTable yearBudgetTable = null;
             ExcelTable yearExpensesTable = null;

@@ -56,10 +56,10 @@ namespace homeBudget.Tests
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
             List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
             accountMovements.Count.Should().Be(122);
-            MovementsViewModel movementViewModel = new MovementsViewModel();
-            ModelConverter.AddValuesToMovementsViewModel(accountMovements[0], ref movementViewModel);
+            TransactionViewModel transactionViewModel = new TransactionViewModel();
+            ModelConverter.AddValuesToMovementsViewModel(accountMovements[0], ref transactionViewModel);
 
-            movementViewModel.Amount.Should().Be(35);
+            transactionViewModel.Amount.Should().Be(35);
         }
 
         [Fact]

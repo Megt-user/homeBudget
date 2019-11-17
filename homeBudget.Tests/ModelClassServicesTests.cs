@@ -66,7 +66,7 @@ namespace homeBudget.Tests
                 JsonmodementsViewModels = JArray.Parse(stream.ReadToEnd());
             }
 
-            var movementsViewModels = new List<MovementsViewModel>();
+            var movementsViewModels = new List<TransactionViewModel>();
             foreach (var item in JsonmodementsViewModels)
             {
                 movementsViewModels.Add(new ModelConverter().JsonToMovementsViewModels(item));
