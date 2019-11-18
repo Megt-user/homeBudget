@@ -34,8 +34,8 @@ namespace homeBudget.Tests
                 }
                 jsonArray.Count.Should().Be(193);
 
-                var noko = jsonArray.ToObject<List<TransactionViewModel>>();
-                List<TransactionViewModel> movementsViewModels = JsonConvert.DeserializeObject<List<TransactionViewModel>>(jsonArray.ToString(), JsonServices.GetJsonSerializerSettings());
+                var noko = jsonArray.ToObject<List<MovementsViewModel>>();
+                List<MovementsViewModel> movementsViewModels = JsonConvert.DeserializeObject<List<MovementsViewModel>>(jsonArray.ToString(), JsonServices.GetJsonSerializerSettings());
                 movementsViewModels.Count.Should().Be(193);
             }
         }

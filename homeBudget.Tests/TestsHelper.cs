@@ -70,7 +70,7 @@ namespace homeBudget.Tests
             }
         }
 
-        public static List<TransactionViewModel> GetMovementsViewModels()
+        public static List<MovementsViewModel> GetMovementsViewModels()
         {
             List<AccountMovement> movementsModels = GetAccountMovements();
             movementsModels.Count.Should().Be(122);

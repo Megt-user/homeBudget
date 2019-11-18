@@ -49,9 +49,9 @@ namespace homeBudget.Services
 
         }
 
-        public static TransactionViewModel JsonToMovementsViewModels(JToken json)
+        public static MovementsViewModel JsonToMovementsViewModels(JToken json)
         {
-            var movementsViewModel = new TransactionViewModel();
+            var movementsViewModel = new MovementsViewModel();
             var noko = ParseObjectProperties(movementsViewModel, json);
 
             return movementsViewModel;
@@ -113,25 +113,25 @@ namespace homeBudget.Services
             return properties?.Select(prop => prop.Name).ToList();
         }
 
-        public static List<TransactionViewModel> CreateMovementsViewModels(List<AccountMovement> accountMovements, List<SubCategory> subCategories, string acountName)
+        public static List<MovementsViewModel> CreateMovementsViewModels(List<AccountMovement> accountMovements, List<SubCategory> subCategories, string acountName)
         {
-            var moventsViewModel = new List<TransactionViewModel>();
+            var moventsViewModel = new List<MovementsViewModel>();
             foreach (var movement in accountMovements)
             {
-                TransactionViewModel transactionViewModel = new TransactionViewModel() { AcountName = acountName };
+                MovementsViewModel movementsViewModel = new MovementsViewModel() { AcountName = acountName };
 
                 // Add values to model if it find same property name
-                AddValuesToMovementsViewModel(movement, ref transactionViewModel);
+                AddValuesToMovementsViewModel(movement, ref movementsViewModel);
 
-                transactionViewModel = UpdateMovementViewModelWithSubCategory(subCategories, transactionViewModel);
+                movementsViewModel = UpdateMovementViewModelWithSubCategory(subCategories, movementsViewModel);
 
-                moventsViewModel.Add(transactionViewModel);
+                moventsViewModel.Add(movementsViewModel);
             }
             AddUnspecifiedTransaction(ref moventsViewModel);
             return moventsViewModel;
         }
 
-        private static void AddUnspecifiedTransaction(ref List<TransactionViewModel> moventsViewModel)
+        private static void AddUnspecifiedTransaction(ref List<MovementsViewModel> moventsViewModel)
         {
             var listOfUnspecifiedTransaction = moventsViewModel.Where(mv => string.IsNullOrEmpty(mv.Category));
             foreach (var movent in listOfUnspecifiedTransaction)
@@ -140,22 +140,22 @@ namespace homeBudget.Services
             }
         }
 
-        public static TransactionViewModel UpdateMovementViewModelWithSubCategory(List<SubCategory> subCategories, TransactionViewModel transactionModel)
+        public static MovementsViewModel UpdateMovementViewModelWithSubCategory(List<SubCategory> subCategories, MovementsViewModel movementsModel)
         {
             try
             {
 
-                if (!string.IsNullOrEmpty(transactionModel.Text))
+                if (!string.IsNullOrEmpty(movementsModel.Text))
                 {
 
-                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(transactionModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
+                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementsModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
 
                     if (subcategoriesMatch != null && subcategoriesMatch.Count() > 0)
                     {
                         if (subcategoriesMatch.Count() == 1)
-                            AddValuesToMovementsViewModel(subcategoriesMatch.FirstOrDefault(), ref transactionModel);
+                            AddValuesToMovementsViewModel(subcategoriesMatch.FirstOrDefault(), ref movementsModel);
                         else
-                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref transactionModel);
+                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref movementsModel);
                     }
                 }
             }
@@ -163,7 +163,7 @@ namespace homeBudget.Services
             {
                 //
             }
-            return transactionModel;
+            return movementsModel;
         }
 
         //TODO check name and transaction value to create a rule to place the transaction in the right category f.eks. Husly > 200 NOK = House not Social
@@ -275,17 +275,17 @@ namespace homeBudget.Services
         }
 
         //Loop through all the properties
-        public static void AddValuesToMovementsViewModel(object movement, ref TransactionViewModel transactionViewModel)
+        public static void AddValuesToMovementsViewModel(object movement, ref MovementsViewModel movementsViewModel)
         {
-            foreach (var property in transactionViewModel.GetType().GetProperties())
+            foreach (var property in movementsViewModel.GetType().GetProperties())
             {
                 var propertyValue = GetPropertyValue(movement, property.Name);
                 if (propertyValue != null)
                 {
-                    var properties = GetPropertiesNamesFromObject(transactionViewModel);
+                    var properties = GetPropertiesNamesFromObject(movementsViewModel);
                     if (properties.Contains(property.Name))
                     {
-                        transactionViewModel.GetType().GetProperty(property.Name)?.SetValue(transactionViewModel, propertyValue);
+                        movementsViewModel.GetType().GetProperty(property.Name)?.SetValue(movementsViewModel, propertyValue);
                     }
                 }
             }
@@ -310,7 +310,7 @@ namespace homeBudget.Services
         }
 
 
-        public static IEnumerable<TransactionViewModel> GetMovementsViewModelsByType(bool justExtrations, IEnumerable<TransactionViewModel> monthAndYaerMovements)
+        public static IEnumerable<MovementsViewModel> GetMovementsViewModelsByType(bool justExtrations, IEnumerable<MovementsViewModel> monthAndYaerMovements)
         {
             if (justExtrations)
                 return monthAndYaerMovements.Where(mv => mv.Amount < 0).ToList();
@@ -320,20 +320,20 @@ namespace homeBudget.Services
 
 
 
-        public static double CategoriesMonthYearTotal(IEnumerable<TransactionViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
+        public static double CategoriesMonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
         {
 
             var monthAndYaerMovements = movements.Where(mov => !string.IsNullOrEmpty(mov.Category) && mov.DateTime.Year == year && mov.DateTime.Month == month);
             return ModelOperation.SumByType(monthAndYaerMovements, justExtrations);
         }
-        public static double MonthYearTotal(IEnumerable<TransactionViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
+        public static double MonthYearTotal(IEnumerable<MovementsViewModel> movements, int? year = null, int? month = null, bool justExtrations = true)
         {
             var monthAndYaerMovements = movements.Where(mov => mov.DateTime.Year == year && mov.DateTime.Month == month);
 
             return ModelOperation.SumByType(monthAndYaerMovements, justExtrations);
         }
 
-        public static List<string> GetListOfCategories(List<TransactionViewModel> momvents)
+        public static List<string> GetListOfCategories(List<MovementsViewModel> momvents)
         {
             var list = momvents.Where(m => m.SubPorject != "Mismatch" && !string.IsNullOrEmpty(m.Category))
                 .Select(m => m.Category).Distinct().ToList();

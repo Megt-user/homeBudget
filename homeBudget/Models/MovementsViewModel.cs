@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace homeBudget.Models
 {
-    public class TransactionViewModel
+    public class MovementsViewModel
     {
         public int Id { get; set; }
         public DateTime DateTime { get; set; }
@@ -16,7 +16,7 @@ namespace homeBudget.Models
 
         public static List<string> excelColumns { get; set; }
 
-        public TransactionViewModel()
+        public MovementsViewModel()
         {
             excelColumns = new List<string>() {"Id", "DateTime", "Text","Amount","KeyWord", "Category","SubPorject", "AcountName" };
         }
