@@ -36,7 +36,7 @@ namespace homeBudget.Tests
             var accountMovmentjArray = ExcelConverter.GetJsonFromTable(workSheetTable);
             List<SubCategory> categorisModel = ModelConverter.GetCategoriesFromJarray(subCategoriesjArray);
             IEnumerable<string> categoryList = categorisModel.Select(cat => cat.Category).Distinct();
-            List<Transaction> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(accountMovmentjArray);
+            List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(accountMovmentjArray);
 
             var modementsViewModels = ModelConverter.CreateMovementsViewModels(accountMovements, categorisModel, "Felles");
 
@@ -55,7 +55,7 @@ namespace homeBudget.Tests
         }
 
         [Fact]
-        public void Test2()
+        public static void Test2()
         {
             //Get MovementsModel
             JArray JsonmodementsViewModels;
@@ -69,7 +69,7 @@ namespace homeBudget.Tests
             var movementsViewModels = new List<MovementsViewModel>();
             foreach (var item in JsonmodementsViewModels)
             {
-                movementsViewModels.Add(new ModelConverter().JsonToMovementsViewModels(item));
+                movementsViewModels.Add( ModelConverter.JsonToMovementsViewModels(item));
             }
 
             // Get Categories

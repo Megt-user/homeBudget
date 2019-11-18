@@ -14,15 +14,15 @@ namespace homeBudget.Services
             //var subCategory = Newtonsoft.Json.JsonConvert.DeserializeObject<SubCategories>(json);
         }
 
-        public Transaction GetAcountMovment(JToken movment)
+        public AccountMovement GetAcountMovment(JToken movment)
         {
-            var accountMovement = new Transaction();
+            var accountMovement = new AccountMovement();
             DateTime movementDateTime;
 
             if (DateTime.TryParse(movment["DateTime"].ToString(), out movementDateTime))
                 accountMovement.DateTime = movementDateTime;
 
-            movment.ToObject<Transaction>();
+            movment.ToObject<AccountMovement>();
             return accountMovement;
         }
 

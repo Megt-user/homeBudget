@@ -21,7 +21,7 @@ namespace homeBudget.Tests
         public void GetAccountMovmentsFromTransactionJarray()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<Transaction> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+            List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
 
             accountMovements.Count.Should().Be(122);
         }
@@ -42,7 +42,7 @@ namespace homeBudget.Tests
         public void GetPropertyValueTest()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<Transaction> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+            List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
             accountMovements.Count.Should().Be(122);
 
             var movement = accountMovements[0];
@@ -54,19 +54,19 @@ namespace homeBudget.Tests
         public void AddValuesToMovementsViewModelTests()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<Transaction> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+            List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
             accountMovements.Count.Should().Be(122);
-            MovementsViewModel movementViewModel = new MovementsViewModel();
-            ModelConverter.AddValuesToMovementsViewModel(accountMovements[0], ref movementViewModel);
+            MovementsViewModel movementsViewModel = new MovementsViewModel();
+            ModelConverter.AddValuesToMovementsViewModel(accountMovements[0], ref movementsViewModel);
 
-            movementViewModel.Amount.Should().Be(35);
+            movementsViewModel.Amount.Should().Be(35);
         }
 
         [Fact]
         public void GetAccountMovmentsFromSubCategoriesFile1()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<Transaction> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+            List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
             accountMovements.Count.Should().Be(122);
 
             jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
@@ -89,7 +89,7 @@ namespace homeBudget.Tests
             var noko = categorisModel.Where(c => (c.Category == "Mat" || c.Category == "Familly"));
             var subcategory = ModelConverter.AddSubcategoriesToMovement(noko);
 
-            subcategory.SupPorject.Should().BeEquivalentTo("Mismatch");
+            subcategory.SubPorject.Should().BeEquivalentTo("Mismatch");
         }
     }
 }

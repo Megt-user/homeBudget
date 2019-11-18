@@ -72,7 +72,7 @@ namespace homeBudget.Tests
 
         public static List<MovementsViewModel> GetMovementsViewModels()
         {
-            List<Transaction> movementsModels = GetAccountMovements();
+            List<AccountMovement> movementsModels = GetAccountMovements();
             movementsModels.Count.Should().Be(122);
 
             List<SubCategory> categorisModel = GetSubCategories();
@@ -90,7 +90,7 @@ namespace homeBudget.Tests
             return ModelConverter.GetCategoriesFromJarray(jsonArray);
         }
 
-        public static List<Transaction> GetAccountMovements()
+        public static List<AccountMovement> GetAccountMovements()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
             return ModelConverter.GetAccountMovmentsFromJarray(jsonArray);

@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using homeBudget.Data;
+using homeBudget.Services.Logger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +25,7 @@ namespace homeBudget
         {
             services.AddDbContext<TransactionContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
             services.AddMvc();
-
+            services.AddSingleton<ILogEntryService, LogEntryService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

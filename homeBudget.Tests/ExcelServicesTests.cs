@@ -19,7 +19,7 @@ namespace homeBudget.Tests
         {
 
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<Transaction> movementsModels = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+            List<AccountMovement> movementsModels = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
             movementsModels.Count.Should().Be(122);
 
             jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
@@ -58,7 +58,7 @@ namespace homeBudget.Tests
         {
 
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<Transaction> movementsModels = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+            List<AccountMovement> movementsModels = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
             movementsModels.Count.Should().Be(122);
 
             jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");

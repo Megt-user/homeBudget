@@ -1,17 +1,26 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using homeBudget.Models;
+using homeBudget.Services.Logger;
 using Newtonsoft.Json.Linq;
 
 namespace homeBudget.Services
 {
     public class ModelConverter
     {
-        public Transaction JsonToAccountMovement(JToken json)
+        ILogEntryService _logEntry;
+        
+        public ModelConverter(ILogEntryService logEntry)
         {
-            Transaction accountMovement = new Transaction();
+            _logEntry = logEntry;
+        }
+
+
+        public AccountMovement JsonToAccountMovement(JToken json)
+        {
+            AccountMovement accountMovement = new AccountMovement();
             var noko = ParseObjectProperties(accountMovement, json);
             return accountMovement;
         }
@@ -21,17 +30,17 @@ namespace homeBudget.Services
             var subCategories = new List<SubCategory>();
             foreach (var item in jArray)
             {
-                subCategories.Add(new ModelConverter().JsonToSubCategory(item));
+                subCategories.Add(JsonToSubCategory(item));
             }
             return subCategories;
         }
 
-        public static List<Transaction> GetAccountMovmentsFromJarray(JArray jArray)
+        public static List<AccountMovement> GetAccountMovmentsFromJarray(JArray jArray)
         {
-            return jArray.Select(item => (Transaction)ParseObjectProperties(new Transaction(), item)).ToList();
+            return jArray.Select(item => (AccountMovement)ParseObjectProperties(new AccountMovement(), item)).ToList();
         }
 
-        public SubCategory JsonToSubCategory(JToken json)
+        public static SubCategory JsonToSubCategory(JToken json)
         {
             SubCategory subCategories = new SubCategory();
             var noko = ParseObjectProperties(subCategories, json);
@@ -40,7 +49,7 @@ namespace homeBudget.Services
 
         }
 
-        public MovementsViewModel JsonToMovementsViewModels(JToken json)
+        public static MovementsViewModel JsonToMovementsViewModels(JToken json)
         {
             var movementsViewModel = new MovementsViewModel();
             var noko = ParseObjectProperties(movementsViewModel, json);
@@ -104,19 +113,19 @@ namespace homeBudget.Services
             return properties?.Select(prop => prop.Name).ToList();
         }
 
-        public static List<MovementsViewModel> CreateMovementsViewModels(List<Transaction> accountMovements, List<SubCategory> subCategories, string acountName)
+        public static List<MovementsViewModel> CreateMovementsViewModels(List<AccountMovement> accountMovements, List<SubCategory> subCategories, string acountName)
         {
             var moventsViewModel = new List<MovementsViewModel>();
             foreach (var movement in accountMovements)
             {
-                MovementsViewModel movementViewModel = new MovementsViewModel() { AcountName = acountName };
+                MovementsViewModel movementsViewModel = new MovementsViewModel() { AcountName = acountName };
 
                 // Add values to model if it find same property name
-                AddValuesToMovementsViewModel(movement, ref movementViewModel);
+                AddValuesToMovementsViewModel(movement, ref movementsViewModel);
 
-                movementViewModel = UpdateMovementViewModelWithSubCategory(subCategories, movementViewModel);
+                movementsViewModel = UpdateMovementViewModelWithSubCategory(subCategories, movementsViewModel);
 
-                moventsViewModel.Add(movementViewModel);
+                moventsViewModel.Add(movementsViewModel);
             }
             AddUnspecifiedTransaction(ref moventsViewModel);
             return moventsViewModel;
@@ -131,22 +140,22 @@ namespace homeBudget.Services
             }
         }
 
-        public static MovementsViewModel UpdateMovementViewModelWithSubCategory(List<SubCategory> subCategories, MovementsViewModel movementModel)
+        public static MovementsViewModel UpdateMovementViewModelWithSubCategory(List<SubCategory> subCategories, MovementsViewModel movementsModel)
         {
             try
             {
 
-                if (!string.IsNullOrEmpty(movementModel.Text))
+                if (!string.IsNullOrEmpty(movementsModel.Text))
                 {
 
-                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
+                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementsModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
 
                     if (subcategoriesMatch != null && subcategoriesMatch.Count() > 0)
                     {
                         if (subcategoriesMatch.Count() == 1)
-                            AddValuesToMovementsViewModel(subcategoriesMatch.FirstOrDefault(), ref movementModel);
+                            AddValuesToMovementsViewModel(subcategoriesMatch.FirstOrDefault(), ref movementsModel);
                         else
-                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref movementModel);
+                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref movementsModel);
                     }
                 }
             }
@@ -154,56 +163,104 @@ namespace homeBudget.Services
             {
                 //
             }
-            return movementModel;
+            return movementsModel;
         }
 
-
+        //TODO check name and transaction value to create a rule to place the transaction in the right category f.eks. Husly > 200 NOK = House not Social
         public static SubCategory AddSubcategoriesToMovement(IEnumerable<SubCategory> subcategoriesMatch)
         {
             var subcategory = new SubCategory();
-            string supPorject = null;
+            string subCategoryName = null;
+            string subProject = "Mismatch";
+
             var subCategories = subcategoriesMatch as SubCategory[] ?? subcategoriesMatch.ToArray();
             var moreThanOneCategory = subCategories.Select(sub => sub.Category).Distinct().Count() > 1;
+
             if (moreThanOneCategory)
             {
+                var keeWords = subCategories.Select(sub => sub.KeyWord).Distinct().ToArray();
+                var subcategoryCategories = subCategories.Select(sub => sub.Category).Distinct().ToArray();
+                if (ArrayCointains(subcategoryCategories, "Mat"))
+                {
+                    subCategoryName = "Mat";
+                }
+                else if (ArrayCointains(subcategoryCategories, "Vinmonopolet"))
+                {
+                    subCategoryName = "Vinmonopolet";
+                }
+                else if (ArrayCointains(subcategoryCategories, "Diesel"))
+                {
+                    subCategoryName = "Diesel";
+                }
+                else if (ArrayCointains(keeWords, "ffo"))
+                {
+                    subCategoryName = "ffo";
+                }
+                else if (ArrayCointains(keeWords, "Matias"))
+                {
+                    subCategoryName = "Matias";
+                    subProject = "kontantinnsats";
+                }
+                else if (ArrayCointains(keeWords, "Åse"))
+                {
+                    subCategoryName = "Åse";
+                    subProject = "kontantinnsats";
 
-                var subcategoryNames = subCategories.Select(sub => sub.KeyWord).ToArray();
-                var subcategoryCategories = subCategories.Select(sub => sub.Category).ToArray();
-                if (subcategoryCategories.Contains("Mat"))
-                {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = "Mat";
-                    supPorject = "Mismatch";
                 }
-                else if (subcategoryCategories.Contains("Vinmonopolet"))
+                else if (ArrayCointains(keeWords, "Oscar"))
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = "Vinmonopolet";
-                    supPorject = "Mismatch";
+                    subCategoryName = "Oscar";
                 }
-                else if (subcategoryNames.Contains("ffo"))
+                else if (ArrayCointains(keeWords, "BRUKÅS"))
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = subCategories.First(cat => cat.KeyWord == "ffo").Category;
-                    supPorject = "Mismatch";
+                    subCategoryName = "Sport";
                 }
-                else if (ArrayCointains(subcategoryNames, "Matias"))
+                else if (ArrayCointains(keeWords, "Hermann Ivarson"))
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = subCategories.First(cat => cat.KeyWord == "matias").Category;
+                    subCategoryName = "Utlaie";
                 }
-                else if (ArrayCointains(subcategoryNames, "Åse"))
+                else if (ArrayCointains(keeWords, "Forsikring"))
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = subCategories.First(cat => cat.KeyWord == "Åse").Category;
+                    subCategoryName = "Forsikring";
+                }
+                ////TODO verifique cómo crear privilegios para configurar la subcategoría por ejemplo Hovden / Mat subcategoría cuando Mat debe ser comida pero otras causas Fritid
+                //else if (ArrayCointains(keeWords, "yx")) 
+                //{
+                //    subCategoryName = "Diesel";
+                //    subProject = "Mismatch";
+                //}
+                else if (ArrayCointains(keeWords, "Hovden"))
+                {
+                    subCategoryName = "Fritid";
+                }
+                else if (ArrayCointains(keeWords, "cf"))
+                {
+                    subCategoryName = "House";
+                }
+                else if (ArrayCointains(keeWords, "HVASSER"))
+                {
+                    subCategoryName = "Fritid";
+                }
+                else if (ArrayCointains(keeWords, "Husly"))
+                {
+                    subCategoryName = "House";
+                }
+                else if (ArrayCointains(keeWords, "SANDEN CAMPING"))
+                {
+                    subCategoryName = "Fritid";
+                }
+                else if (ArrayCointains(keeWords, "SKARPHEDIN"))
+                {
+                    subCategoryName = "Familly";
                 }
                 else
                 {
-                    subcategory.KeyWord = string.Join(",", subcategoryNames);
-                    subcategory.Category = string.Join(",", subcategoryCategories);
-                    supPorject = "Mismatch";
+                    subCategoryName = string.Join(",", subcategoryCategories);
                 }
-                subcategory.SupPorject = supPorject;
+
+                subcategory.KeyWord = string.Join(",", keeWords);
+                subcategory.Category = subCategoryName;
+                subcategory.SubPorject = subProject;
             }
             else
             {
@@ -276,14 +333,12 @@ namespace homeBudget.Services
             return ModelOperation.SumByType(monthAndYaerMovements, justExtrations);
         }
 
-
-
-
         public static List<string> GetListOfCategories(List<MovementsViewModel> momvents)
         {
-            var list = momvents.Where(m => m.SupPorject != "Mismatch" && !string.IsNullOrEmpty(m.Category))
+            var list = momvents.Where(m => m.SubPorject != "Mismatch" && !string.IsNullOrEmpty(m.Category))
                 .Select(m => m.Category).Distinct().ToList();
             return list;
+
         }
     }
 }

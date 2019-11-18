@@ -14,7 +14,7 @@ namespace homeBudget.Tests
         public void AverageforCategoryTestYearExtractions()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<Transaction> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+            List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
             accountMovements.Count.Should().Be(122);
 
             jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
@@ -38,7 +38,7 @@ namespace homeBudget.Tests
         public void AverageforCategoryTestYearIncams()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<Transaction> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+            List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
             accountMovements.Count.Should().Be(122);
 
             jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
@@ -62,7 +62,7 @@ namespace homeBudget.Tests
         public void AverageforCategoryTestMonth()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<Transaction> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+            List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
             accountMovements.Count.Should().Be(122);
 
             jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
