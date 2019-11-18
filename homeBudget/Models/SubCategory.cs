@@ -7,7 +7,7 @@ namespace homeBudget.Models
         public int Id { get; set; }
         public string KeyWord { get; set; }
         public string Category { get; set; }
-        public string SupPorject { get; set; }
+        public string SubPorject { get; set; }
 
         public ICollection<KeeWord> KeeWord { get; set; }
 

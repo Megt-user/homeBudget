@@ -25,9 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Data\Budget Cashflow.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <EmbeddedResource Include="Data\Budget Cashflow.xlsx" />
   </ItemGroup>
 
   <ItemGroup>
