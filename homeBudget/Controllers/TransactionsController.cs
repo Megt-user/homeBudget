@@ -30,11 +30,6 @@ namespace homeBudget.Controllers
             _logEntryService = logEntryService;
         }
 
-        public TransactionsController(IHostingEnvironment environment)
-        {
-            _hostingEnvironment = environment;
-        }
-
         [HttpPost("UploadFiles")]
         public async Task<IActionResult> Post(IFormFile transactions, IFormFile categories, int year = 0)
         {
@@ -56,8 +51,7 @@ namespace homeBudget.Controllers
                 transactionsWorkSheet = await ExcelHelpers.GetExcelWorkSheet(transactions, filePathTemp);
                 categoriesWorkSheet = await ExcelHelpers.GetExcelWorkSheet(categories, filePath1);
                 logEntry = new LogEntry("Read Excel Files", "GetExcelWorkSheet", stopWatch.ElapsedMilliseconds, "Info");
-
-
+                _logEntryService.Save(logEntry);
             }
             catch (Exception ex)
             {
@@ -66,13 +60,13 @@ namespace homeBudget.Controllers
                 return BadRequest("Can't read excel files");
             }
 
-            _logEntryService.Save(logEntry);
             stopWatch = Stopwatch.StartNew();
             var totalStopWatch = new Stopwatch();
             totalStopWatch.Start();
 
             var transactionsTable = transactionsWorkSheet.Tables.FirstOrDefault();
             var categoriestabTable = categoriesWorkSheet.Tables.FirstOrDefault();
+
 
 
             //Get excel data  in Json format easier to serialize to class
@@ -168,7 +162,7 @@ namespace homeBudget.Controllers
                 catch (Exception ex)
                 {
                     logEntry = new LogEntry($"error :{ex.Message}", "CreateExcelTableFromMovementsViewModel", stopWatch.ElapsedMilliseconds, "Error");
-                    _logEntryService.Save(logEntry); 
+                    _logEntryService.Save(logEntry);
                     return BadRequest("Transactions Update With Categories Can't be saved");
                 }
 
@@ -212,7 +206,7 @@ namespace homeBudget.Controllers
                     logEntry = new LogEntry("Total time procesing 'Budget Cashflow' Excel package", "transactionUpdatePackage", totalStopWatch.ElapsedMilliseconds, "Info");
                     _logEntryService.Save(logEntry);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     logEntry = new LogEntry($"Budget Cashflow - error :{ex.Message}", "CreateExcelTableFromMovementsViewModel", stopWatch.ElapsedMilliseconds, "Error");
                     _logEntryService.Save(logEntry);
@@ -253,6 +247,7 @@ namespace homeBudget.Controllers
                     }
 
                     categoryList = ModelConverter.GetListOfCategories(movementsViewModels);
+
 
 
                     // Add Categories Average to excel
@@ -352,9 +347,10 @@ namespace homeBudget.Controllers
             string extension = Path.GetExtension(file.FileName).ToLower();
             if (size > 0)
             {
-                var monthWSheet = excelPackage.Workbook.Worksheets["Monthly summary"];
-                var tblOperatingExpenses7Table = monthWSheet.Tables["tblOperatingExpenses7"];
-                ExcelServices.UpdateClassesTableValues(monthBudgetCategoriesAddress, monthExpensesCategoriesAddress, tblOperatingExpenses7Table);
+                if (extension == ".xls" || extension == ".xlsx")
+                {
+                    return true;
+                }
             }
 
             return false;
@@ -510,7 +506,7 @@ namespace homeBudget.Controllers
             catch (Exception ex)
             {
                 logEntry = new LogEntry($"YearExpenses - error :{ex.Message}", "GetColumnsNameAdress", stopWatch.ElapsedMilliseconds, "Error");
-                _logEntryService.Save(logEntry); 
+                _logEntryService.Save(logEntry);
                 throw new Exception("Cant get tables info from 'Expenses details' sheet to update Class table. Error message");
             }
             stopWatch = Stopwatch.StartNew();
