@@ -91,5 +91,23 @@ namespace homeBudget.Tests
 
             subcategory.SubPorject.Should().BeEquivalentTo("Mismatch");
         }
+        [Fact]
+        public void GetKeewordfromTransactionTextTest()
+        {
+            var jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
+            List<SubCategory> categorisModel = ModelConverter.GetCategoriesFromJarray(jsonArray);
+
+            var movementsViewModel = new MovementsViewModel()
+            {
+                Text = "Innskudd - ATM SPAREBANKEN DIN   TER4077"
+                //Text = "Varekjøp BRUKÅS SPORT AS BØGATA 56 BØ I TELEMARK betal dato 2017-11-11"
+                //Text = "Varekjøp REMA BØ LUNDEVEGEN 1 BØ I TELEMARK betal dato 2017-06-06"
+                //Text = @"VISA VARE 429941XXXXXX9552 10.09 IZ *PETS OF NORWAY\OSLO"
+                //Text = @"VISA VARE 429941XXXXXX5850 09.10  0,00 ITUNES.COM/BILL\80056952 Kurs  100,0000E"
+            };
+            var subcategory = ModelConverter.GetTransactionCategoryFromKeewordList(categorisModel, movementsViewModel);
+
+            subcategory.Category.Should().NotBeEmpty();
+        }
     }
 }

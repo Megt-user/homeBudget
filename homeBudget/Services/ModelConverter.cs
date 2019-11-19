@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using homeBudget.Models;
 using homeBudget.Services.Logger;
 using Newtonsoft.Json.Linq;
@@ -11,7 +12,7 @@ namespace homeBudget.Services
     public class ModelConverter
     {
         ILogEntryService _logEntry;
-        
+
         public ModelConverter(ILogEntryService logEntry)
         {
             _logEntry = logEntry;
@@ -123,7 +124,7 @@ namespace homeBudget.Services
                 // Add values to model if it find same property name
                 AddValuesToMovementsViewModel(movement, ref movementsViewModel);
 
-                movementsViewModel = UpdateMovementViewModelWithSubCategory(subCategories, movementsViewModel);
+                movementsViewModel = GetTransactionCategoryFromKeewordList(subCategories, movementsViewModel);
 
                 moventsViewModel.Add(movementsViewModel);
             }
@@ -139,8 +140,8 @@ namespace homeBudget.Services
                 movent.Category = "Unspecified";
             }
         }
-
-        public static MovementsViewModel UpdateMovementViewModelWithSubCategory(List<SubCategory> subCategories, MovementsViewModel movementsModel)
+        //Get Kewords from movementsModel text
+        public static MovementsViewModel GetTransactionCategoryFromKeewordList(List<SubCategory> subCategories, MovementsViewModel movementsModel)
         {
             try
             {
@@ -148,7 +149,7 @@ namespace homeBudget.Services
                 if (!string.IsNullOrEmpty(movementsModel.Text))
                 {
 
-                    var subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementsModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
+                    var subcategoriesMatch = subCategories.Where(sub => ExactMatch(movementsModel.Text, sub.KeyWord));
 
                     if (subcategoriesMatch != null && subcategoriesMatch.Count() > 0)
                     {
@@ -156,6 +157,14 @@ namespace homeBudget.Services
                             AddValuesToMovementsViewModel(subcategoriesMatch.FirstOrDefault(), ref movementsModel);
                         else
                             AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref movementsModel);
+                    }
+                    else
+                    {
+                        subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementsModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
+                        if (subcategoriesMatch != null && subcategoriesMatch.Count() > 0)
+                        {
+                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref movementsModel);
+                        }
                     }
                 }
             }
@@ -166,11 +175,15 @@ namespace homeBudget.Services
             return movementsModel;
         }
 
+
+        static bool ExactMatch(string input, string match)
+        {
+            return Regex.IsMatch(input, string.Format(@"(?i)(?<= |^){0}(?= |$)", Regex.Escape(match)));
+        }
         //TODO check name and transaction value to create a rule to place the transaction in the right category f.eks. Husly > 200 NOK = House not Social
         public static SubCategory AddSubcategoriesToMovement(IEnumerable<SubCategory> subcategoriesMatch)
         {
             var subcategory = new SubCategory();
-            string subCategoryName = null;
             string subProject = "Mismatch";
 
             var subCategories = subcategoriesMatch as SubCategory[] ?? subcategoriesMatch.ToArray();
@@ -180,6 +193,7 @@ namespace homeBudget.Services
             {
                 var keeWords = subCategories.Select(sub => sub.KeyWord).Distinct().ToArray();
                 var subcategoryCategories = subCategories.Select(sub => sub.Category).Distinct().ToArray();
+                string subCategoryName = null;
                 if (ArrayCointains(subcategoryCategories, "Mat"))
                 {
                     subCategoryName = "Mat";
@@ -260,12 +274,15 @@ namespace homeBudget.Services
 
                 subcategory.KeyWord = string.Join(",", keeWords);
                 subcategory.Category = subCategoryName;
-                subcategory.SubPorject = subProject;
             }
             else
             {
                 subcategory = subCategories.FirstOrDefault();
             }
+
+            if (subcategory != null)
+                subcategory.SubPorject = subProject;
+
             return subcategory;
         }
 
