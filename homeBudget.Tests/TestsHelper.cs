@@ -89,11 +89,25 @@ namespace homeBudget.Tests
             var jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
             return ModelConverter.GetCategoriesFromJarray(jsonArray);
         }
+        public static List<SubCategory> GetSubCategoriesFromExcel()
+        {
+            var worksheet = TestsHelper.GetExcelWorksheetFromFile("Categories.xlsx");
+            var subCategoriesjArray = ExcelConverter.GetJsonFromTable(worksheet.Tables.FirstOrDefault());
+            return ModelConverter.GetCategoriesFromJarray(subCategoriesjArray);
+        }
 
         public static List<AccountMovement> GetAccountMovements()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
             return ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
+        } 
+        public static List<AccountMovement> GetAccountMovementsFromExcel(string filename= null)
+        {
+            filename = filename ?? "Transactions-Felles - Temp.xlsx";
+            var worksheet = GetExcelWorksheetFromFile(filename);
+            var accountMovmentjArray = ExcelConverter.GetJsonFromTable(worksheet.Tables.FirstOrDefault());
+
+            return ModelConverter.GetAccountMovmentsFromJarray(accountMovmentjArray);
         }
 
         public static IEnumerable<string> GetCategoryList()

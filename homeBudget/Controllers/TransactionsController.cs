@@ -50,7 +50,7 @@ namespace homeBudget.Controllers
             {
                 transactionsWorkSheet = await ExcelHelpers.GetExcelWorkSheet(transactions, filePathTemp);
                 categoriesWorkSheet = await ExcelHelpers.GetExcelWorkSheet(categories, filePath1);
-                logEntry = new LogEntry("Read Excel Files", "GetExcelWorkSheet", stopWatch.ElapsedMilliseconds, "Info");
+                logEntry = new LogEntry($"Read Excel Files {transactionsWorkSheet.Name} and {categories.Name}", "GetExcelWorkSheet", stopWatch.ElapsedMilliseconds, "Info");
                 _logEntryService.Save(logEntry);
             }
             catch (Exception ex)
@@ -71,11 +71,11 @@ namespace homeBudget.Controllers
 
             //Get excel data  in Json format easier to serialize to class
             var accountMovmentjArray = ExcelConverter.GetJsonFromTable(transactionsTable);
-            logEntry = new LogEntry("Get Transaction Json Array", "GetJsonFromTable", stopWatch.ElapsedMilliseconds, "Info");
+            logEntry = new LogEntry($"transaction table {transactionsTable.Name} ({transactionsTable.Address.Start.Address}:{transactionsTable.Address.End.Address}) number of categories = {accountMovmentjArray.Count}", "GetJsonFromTable", stopWatch.ElapsedMilliseconds, "Info");
             _logEntryService.Save(logEntry);
             stopWatch = Stopwatch.StartNew();
             var subCategoriesjArray = ExcelConverter.GetJsonFromTable(categoriestabTable);
-            logEntry = new LogEntry("Get CategoriestabTable Json Array", "GetJsonFromTable", stopWatch.ElapsedMilliseconds, "Info");
+            logEntry = new LogEntry($"Categories table {categoriestabTable.Name} ({categoriestabTable.Address.Start.Address}:{categoriestabTable.Address.End.Address}) number of categories = {subCategoriesjArray.Count}", "GetJsonFromTable", stopWatch.ElapsedMilliseconds, "Info");
             _logEntryService.Save(logEntry);
 
 

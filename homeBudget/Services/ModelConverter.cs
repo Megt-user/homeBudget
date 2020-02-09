@@ -151,19 +151,34 @@ namespace homeBudget.Services
 
                     var subcategoriesMatch = subCategories.Where(sub => ExactMatch(movementsModel.Text, sub.KeyWord));
 
-                    if (subcategoriesMatch != null && subcategoriesMatch.Count() > 0)
+                    var categories = subcategoriesMatch as SubCategory[] ?? subcategoriesMatch.ToArray();
+                    if (!categories.Any())
                     {
-                        if (subcategoriesMatch.Count() == 1)
-                            AddValuesToMovementsViewModel(subcategoriesMatch.FirstOrDefault(), ref movementsModel);
+
+                        var replaceedNonAlphanumeric = Regex.Replace(movementsModel.Text, @"[^a-zA-Z\d\s:]", " ");
+                        var count = movementsModel.Text.Count(x => x == ' ');
+                        var count2 = replaceedNonAlphanumeric.Count(x => x == ' ');
+                        if (count != count2)
+                            categories = subCategories.Where(sub => ExactMatch(replaceedNonAlphanumeric, sub.KeyWord)).ToArray();
+
+                    }
+
+                    if (categories.Any())
+                    {
+                        if (categories.Count() == 1)
+                            AddValuesToMovementsViewModel(categories.FirstOrDefault(), ref movementsModel);
                         else
-                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref movementsModel);
+                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(categories), ref movementsModel);
                     }
                     else
                     {
+
                         subcategoriesMatch = subCategories.Where(sub => CultureInfo.InvariantCulture.CompareInfo.LastIndexOf(movementsModel.Text, sub.KeyWord.ToLower(), CompareOptions.IgnoreCase) >= 0);
-                        if (subcategoriesMatch != null && subcategoriesMatch.Count() > 0)
+                        if (subcategoriesMatch.Count() > 0)
                         {
-                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch), ref movementsModel);
+                            var subcategoriesMatch1 = subCategories.Where(sub => ExactMatch(movementsModel.Text, sub.KeyWord));
+                            AddValuesToMovementsViewModel(AddSubcategoriesToMovement(subcategoriesMatch, false), ref movementsModel);
+
                         }
                     }
                 }
@@ -178,13 +193,14 @@ namespace homeBudget.Services
 
         static bool ExactMatch(string input, string match)
         {
-            return Regex.IsMatch(input, string.Format(@"(?i)(?<= |^){0}(?= |$)", Regex.Escape(match)));
+            var result = Regex.IsMatch(input, string.Format(@"(?i)(?<= |^){0}(?= |$)", Regex.Escape(match)));
+            return result;
         }
         //TODO check name and transaction value to create a rule to place the transaction in the right category f.eks. Husly > 200 NOK = House not Social
-        public static SubCategory AddSubcategoriesToMovement(IEnumerable<SubCategory> subcategoriesMatch)
+        public static SubCategory AddSubcategoriesToMovement(IEnumerable<SubCategory> subcategoriesMatch, bool exactMatch = true)
         {
             var subcategory = new SubCategory();
-            string subProject = "Mismatch";
+            string subProject = exactMatch ? "Mismatch-Exact" : "Mismatch";
 
             var subCategories = subcategoriesMatch as SubCategory[] ?? subcategoriesMatch.ToArray();
             var moreThanOneCategory = subCategories.Select(sub => sub.Category).Distinct().Count() > 1;
@@ -193,49 +209,53 @@ namespace homeBudget.Services
             {
                 var keeWords = subCategories.Select(sub => sub.KeyWord).Distinct().ToArray();
                 var subcategoryCategories = subCategories.Select(sub => sub.Category).Distinct().ToArray();
-                string subCategoryName = null;
+                string category = null;
                 if (ArrayCointains(subcategoryCategories, "Mat"))
                 {
-                    subCategoryName = "Mat";
+                    category = "Mat";
                 }
                 else if (ArrayCointains(subcategoryCategories, "Vinmonopolet"))
                 {
-                    subCategoryName = "Vinmonopolet";
+                    category = "Vinmonopolet";
                 }
                 else if (ArrayCointains(subcategoryCategories, "Diesel"))
                 {
-                    subCategoryName = "Diesel";
+                    category = "Diesel";
                 }
                 else if (ArrayCointains(keeWords, "ffo"))
                 {
-                    subCategoryName = "ffo";
+                    category = "ffo";
                 }
                 else if (ArrayCointains(keeWords, "Matias"))
                 {
-                    subCategoryName = "Matias";
+                    category = "Matias";
                     subProject = "kontantinnsats";
                 }
                 else if (ArrayCointains(keeWords, "Åse"))
                 {
-                    subCategoryName = "Åse";
+                    category = "Åse";
                     subProject = "kontantinnsats";
 
                 }
                 else if (ArrayCointains(keeWords, "Oscar"))
                 {
-                    subCategoryName = "Oscar";
+                    category = "Oscar";
                 }
                 else if (ArrayCointains(keeWords, "BRUKÅS"))
                 {
-                    subCategoryName = "Sport";
+                    category = "Sport";
                 }
                 else if (ArrayCointains(keeWords, "Hermann Ivarson"))
                 {
-                    subCategoryName = "Utlaie";
+                    category = "Utlaie";
+                }
+                else if (ArrayCointains(keeWords, "Itunes"))
+                {
+                    category = "App/Media";
                 }
                 else if (ArrayCointains(keeWords, "Forsikring"))
                 {
-                    subCategoryName = "Forsikring";
+                    category = "Forsikring";
                 }
                 ////TODO verifique cómo crear privilegios para configurar la subcategoría por ejemplo Hovden / Mat subcategoría cuando Mat debe ser comida pero otras causas Fritid
                 //else if (ArrayCointains(keeWords, "yx")) 
@@ -245,35 +265,35 @@ namespace homeBudget.Services
                 //}
                 else if (ArrayCointains(keeWords, "Hovden"))
                 {
-                    subCategoryName = "Fritid";
+                    category = "Fritid";
                 }
                 else if (ArrayCointains(keeWords, "cf"))
                 {
-                    subCategoryName = "House";
+                    category = "House";
                 }
                 else if (ArrayCointains(keeWords, "HVASSER"))
                 {
-                    subCategoryName = "Fritid";
+                    category = "Fritid";
                 }
                 else if (ArrayCointains(keeWords, "Husly"))
                 {
-                    subCategoryName = "House";
+                    category = "House";
                 }
                 else if (ArrayCointains(keeWords, "SANDEN CAMPING"))
                 {
-                    subCategoryName = "Fritid";
+                    category = "Fritid";
                 }
                 else if (ArrayCointains(keeWords, "SKARPHEDIN"))
                 {
-                    subCategoryName = "Familly";
+                    category = "Familly";
                 }
                 else
                 {
-                    subCategoryName = string.Join(",", subcategoryCategories);
+                    category = string.Join(",", subcategoryCategories);
                 }
 
                 subcategory.KeyWord = string.Join(",", keeWords);
-                subcategory.Category = subCategoryName;
+                subcategory.Category = category;
             }
             else
             {

@@ -20,6 +20,7 @@ namespace homeBudget.Data
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<KeeWord> KeeWords { get; set; }
         public DbSet<TransactionsKeewords> TransactionsKeewordses { get; set; }
+        public DbSet<LogEntry> LogEntries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

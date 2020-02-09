@@ -53,7 +53,7 @@ namespace homeBudget.Tests
                 saveExcel.Should().BeTrue();
             }
         }
-        [Fact]
+        [Fact(DisplayName = "DateFormatTest")]
         public void CreateExcelTableFromMovementsViewModelTest()
         {
 
@@ -63,7 +63,7 @@ namespace homeBudget.Tests
 
             jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
             List<SubCategory> categorisModel = ModelConverter.GetCategoriesFromJarray(jsonArray);
-            categorisModel.Count.Should().Be(105);
+            
             IEnumerable<string> categoryList = categorisModel.Select(cat => cat.Category).Distinct();
 
 
@@ -88,7 +88,7 @@ namespace homeBudget.Tests
                 var sheeDefault = package.Workbook.Worksheets.FirstOrDefault();
                 if (sheeDefault != null) sheeDefault.Cells["D57"].Value.Should().Be(-55);
 
-                var saveExcel = TestsHelper.SaveExcrlPackage(package, "test-Temp");
+                var saveExcel = TestsHelper.SaveExcrlPackage(package, "DateFormatTest");
                 saveExcel.Should().BeTrue();
             }
         }

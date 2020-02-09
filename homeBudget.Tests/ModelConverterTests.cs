@@ -65,13 +65,11 @@ namespace homeBudget.Tests
         [Fact]
         public void GetAccountMovmentsFromSubCategoriesFile1()
         {
-            var jsonArray = TestsHelper.GetJonsArrayFromFile("TransactionsArray.json");
-            List<AccountMovement> accountMovements = ModelConverter.GetAccountMovmentsFromJarray(jsonArray);
-            accountMovements.Count.Should().Be(122);
-
-            jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
-            List<SubCategory> categorisModel = ModelConverter.GetCategoriesFromJarray(jsonArray);
-            categorisModel.Count.Should().Be(105);
+            
+            
+            List<AccountMovement> accountMovements = TestsHelper.GetAccountMovementsFromExcel("Transactions-Felles - Temp.xlsx");
+            
+            List<SubCategory> categorisModel = TestsHelper.GetSubCategoriesFromExcel();
 
             var modementsViewModels = ModelConverter.CreateMovementsViewModels(accountMovements, categorisModel, "Felles");
 
@@ -95,15 +93,22 @@ namespace homeBudget.Tests
         public void GetKeewordfromTransactionTextTest()
         {
             var jsonArray = TestsHelper.GetJonsArrayFromFile("CategoriesArray.json");
-            List<SubCategory> categorisModel = ModelConverter.GetCategoriesFromJarray(jsonArray);
+            //List<SubCategory> categorisModel = ModelConverter.GetCategoriesFromJarray(jsonArray);
+            List<SubCategory> categorisModel = TestsHelper.GetSubCategoriesFromExcel();
+
+
+
+
 
             var movementsViewModel = new MovementsViewModel()
             {
-                Text = "Innskudd - ATM SPAREBANKEN DIN   TER4077"
+                //Text = "kontaktløs NYA*Boe Bilvaskeanlegg,"
+                //Text = "Innskudd - ATM SPAREBANKEN DIN   TER4077"
                 //Text = "Varekjøp BRUKÅS SPORT AS BØGATA 56 BØ I TELEMARK betal dato 2017-11-11"
                 //Text = "Varekjøp REMA BØ LUNDEVEGEN 1 BØ I TELEMARK betal dato 2017-06-06"
                 //Text = @"VISA VARE 429941XXXXXX9552 10.09 IZ *PETS OF NORWAY\OSLO"
                 //Text = @"VISA VARE 429941XXXXXX5850 09.10  0,00 ITUNES.COM/BILL\80056952 Kurs  100,0000E"
+                Text = "Varekjøp APOTEK 1 BØ BØGT.44 BØ I TELEMARK betal dato 2018-05-23"
             };
             var subcategory = ModelConverter.GetTransactionCategoryFromKeewordList(categorisModel, movementsViewModel);
 

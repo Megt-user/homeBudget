@@ -249,7 +249,7 @@ namespace homeBudget
                 case "DateTime":
                     return "dd/mm/yyyy";
                 case "Amount":
-                    return "$ # ##0.00;[Red]$ -# ##0.00";
+                    return "$ #,##0.00;[Red]$ -#,##0.00";
                 default:
                     return "#";
             }

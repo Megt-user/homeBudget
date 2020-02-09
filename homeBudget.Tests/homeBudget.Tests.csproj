@@ -16,6 +16,7 @@
     <None Remove="TestData\SubCategories.json" />
     <None Remove="TestData\TestData.xlsx" />
     <None Remove="TestData\Transactions Update With Categories.xlsx" />
+    <None Remove="TestData\Transactions-Felles - Temp.xlsx" />
     <None Remove="TestData\Transactions.xlsx" />
     <None Remove="TestData\TransactionsArray.json" />
     <None Remove="TestData\TransactionViewModelArray.json" />
@@ -33,6 +34,7 @@
     <EmbeddedResource Include="TestData\SubCategories.json" />
     <EmbeddedResource Include="TestData\TestData.xlsx" />
     <EmbeddedResource Include="TestData\Transactions Update With Categories.xlsx" />
+    <EmbeddedResource Include="TestData\Transactions-Felles - Temp.xlsx" />
     <EmbeddedResource Include="TestData\Transactions.xlsx">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
